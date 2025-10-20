@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monish V | 3D Developer Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Modern Approach: Import Maps for reliable THREE.js loading -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050816;
+            --primary-accent: #915EFF;
+            --secondary-text: #aaa6c3;
+            --card-bg: #151030;
+            --tertiary-bg: #100d25;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--secondary-text);
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: rgba(5, 8, 22, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        .nav-link:hover, .nav-link.active { color: white; }
+        .section-wrapper { padding: 5rem 1rem; position: relative; z-index: 1; }
+        @media (min-width: 768px) { .section-wrapper { padding: 7rem 2rem; } }
+        .section-head { color: #fff; font-weight: 800; }
+        .section-subhead { text-transform: uppercase; letter-spacing: 1px; }
+        
+        .project-card, .experience-card {
+            background: var(--tertiary-bg);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(145, 94, 255, 0.2);
+        }
+        .project-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 30px rgba(145, 94, 255, 0.2);
+        }
+        .github-link {
+            position: absolute; top: 1rem; right: 1rem; background: #111;
+            width: 40px; height: 40px; border-radius: 50%; display: flex;
+            justify-content: center; align-items: center; transition: transform 0.3s;
+        }
+        .github-link:hover { transform: scale(1.15); }
+
+        .tag { font-size: 14px; font-weight: bold; }
+        .blue-text-gradient { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .green-text-gradient { background: linear-gradient(90deg, #22c55e, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .pink-text-gradient { background: linear-gradient(90deg, #ec4899, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Timeline */
+        .timeline { position: relative; max-width: 1200px; margin: 0 auto; }
+        .timeline::after { content: ''; position: absolute; width: 6px; background-color: #2c215a; top: 0; bottom: 0; left: 50%; margin-left: -3px; }
+        .timeline-container { padding: 10px 40px; position: relative; background-color: inherit; width: 50%; }
+        .timeline-container.left { left: 0; }
+        .timeline-container.right { left: 50%; }
+        .timeline-container::after { content: ''; position: absolute; width: 25px; height: 25px; right: -12px; background-color: white; border: 4px solid var(--primary-accent); top: 25px; border-radius: 50%; z-index: 1; }
+        .timeline-container.right::after { left: -13px; }
+        .timeline-content { padding: 20px 30px; background: var(--tertiary-bg); position: relative; border-radius: 8px; }
+
+        @media screen and (max-width: 768px) {
+          .timeline::after { left: 31px; }
+          .timeline-container { width: 100%; padding-left: 70px; padding-right: 25px; }
+          .timeline-container.right { left: 0%; }
+          .timeline-container.left::after, .timeline-container.right::after { left: 18px; }
+        }
+
+        /* GSAP */
+        .gsap-reveal { opacity: 0; transform: translateY(40px); }
+
+        /* New Tech Icons Grid Style */
+        .tech-icon-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 112px; /* w-28 */
+            height: 112px; /* h-28 */
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            padding: 1rem;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            cursor: pointer;
+        }
+        .tech-icon-wrapper:hover {
+            transform: scale(1.1);
+            background-color: rgba(145, 94, 255, 0.2);
+        }
+        .tech-icon-wrapper .tech-name {
+            position: absolute;
+            bottom: -2.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(-10px);
+            background: var(--card-bg);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            color: white;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .tech-icon-wrapper:hover .tech-name {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* New Contact Icons Style */
+        .contact-icon-link {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 64px; /* w-16 */
+            height: 64px; /* h-16 */
+            background-color: var(--card-bg);
+            border-radius: 50%;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        .contact-icon-link:hover {
+            transform: scale(1.1);
+            background-color: var(--primary-accent);
+        }
+        .contact-icon-link svg {
+            width: 32px; /* w-8 */
+            height: 32px; /* h-8 */
+            color: white;
+        }
+    </style>
+</head>
+<body class="relative">
+    <header class="header fixed top-0 left-0 w-full z-20 px-4 sm:px-8 py-5">
+        <div class="w-full flex justify-between items-center max-w-7xl mx-auto">
+            <a href="#" class="flex items-center gap-2" onclick="window.scrollTo(0,0)">
+                <span class="text-white text-2xl font-bold">Monish V</span>
+            </a>
+            <nav class="hidden md:flex list-none gap-10">
+                <a href="#about" class="nav-link text-lg font-medium">About</a>
+                <a href="#experience" class="nav-link text-lg font-medium">Experience</a>
+                <a href="#tech" class="nav-link text-lg font-medium">Tech</a>
+                <a href="#projects" class="nav-link text-lg font-medium">Projects</a>
+                <a href="#contact" class="nav-link text-lg font-medium">Contact</a>
+            </nav>
+        </div>
+    </header>
+
+    <section id="home" class="relative w-full h-screen">
+        <canvas id="hero-canvas" class="absolute inset-0"></canvas>
+    </section>
+
+    <main class="relative z-10">
+        <section id="about" class="section-wrapper max-w-7xl mx-auto -mt-24 bg-opacity-50 backdrop-blur-sm rounded-t-3xl">
+            <div class="flex flex-col md:flex-row items-center gap-10">
+                <div class="flex-1">
+                    <div class="gsap-reveal">
+                        <p class="section-subhead text-lg">Introduction</p>
+                        <h2 class="section-head text-4xl sm:text-5xl lg:text-6xl">Overview.</h2>
+                    </div>
+                    <p class="mt-4 text-secondary-text text-[17px] max-w-3xl leading-[30px] gsap-reveal">
+                        I'm a skilled and versatile developer with a strong focus on Python for backend development and AI/ML applications. My expertise extends to robust database management with SQL and Oracle, and I enjoy crafting clean, user-friendly frontends using HTML. With a solid foundation in data-driven solutions, I excel at building efficient and scalable applications that solve real-world problems. I'm a fast learner who thrives on collaboration. Let's create something amazing together!
+                    </p>
+                </div>
+                <div class="flex-1 w-full h-80 gsap-reveal">
+                    <!-- The text from home section -->
+                    <div class="flex items-start gap-5 h-full justify-center">
+                        <div>
+                            <h1 class="text-white font-black text-5xl sm:text-6xl lg:text-7xl lg:leading-tight mt-2">
+                                Hi, I'm <span class="text-[var(--primary-accent)]">Monish</span>
+                            </h1>
+                            <p class="text-[#dfd9ff] font-medium text-lg sm:text-xl lg:text-2xl mt-4">
+                                I develop AI-powered applications, user<br class="sm:block hidden" /> interfaces, and full-stack web solutions.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="experience" class="section-wrapper max-w-7xl mx-auto">
+            <div class="gsap-reveal text-center">
+                <p class="section-subhead text-lg">What I have done so far</p>
+                <h2 class="section-head text-4xl sm:text-5xl lg:text-6xl">Work Experience.</h2>
+            </div>
+            <div id="experience-container" class="timeline mt-20">
+                 <!-- Experience Timeline Injected Here -->
+            </div>
+        </section>
+        
+        <section id="tech" class="section-wrapper max-w-7xl mx-auto">
+            <div class="gsap-reveal text-center">
+                 <h2 class="section-head text-4xl sm:text-5xl lg:text-6xl">Technologies.</h2>
+            </div>
+            <div id="tech-icons-container" class="mt-20 flex flex-wrap gap-10 justify-center">
+                <!-- Tech Icons Injected Here -->
+            </div>
+        </section>
+
+        <section id="projects" class="section-wrapper max-w-7xl mx-auto">
+            <div class="gsap-reveal">
+                <p class="section-subhead text-lg">My Work</p>
+                <h2 class="section-head text-4xl sm:text-5xl lg:text-6xl">Projects.</h2>
+            </div>
+            <div class="w-full flex gsap-reveal">
+                <p class="mt-3 text-secondary-text text-[17px] max-w-3xl leading-[30px]">
+                    My projects demonstrate my skills through real-world examples. Each is briefly described with a link to its repository, showcasing my ability to tackle complex challenges, adapt to various technologies, and manage projects effectively.
+                </p>
+            </div>
+            <div id="projects-container" class="mt-20 flex flex-wrap gap-8 justify-center">
+                <!-- Projects injected here -->
+            </div>
+        </section>
+        
+        <section id="contact" class="section-wrapper max-w-7xl mx-auto">
+            <div class="gsap-reveal xl:mt-12 flex xl:flex-row flex-col-reverse gap-10 overflow-hidden">
+                <div class="flex-[0.75] bg-[var(--tertiary-bg)] p-8 rounded-2xl">
+                    <p class="section-subhead text-lg">Get in touch</p>
+                    <h3 class="section-head text-4xl sm:text-5xl lg:text-6xl">Contact.</h3>
+                    <div class="mt-12 flex items-center justify-center gap-10">
+                        <a href="mailto:monishv217@gmail.com" class="contact-icon-link" aria-label="Email Monish">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                            </svg>
+                        </a>
+                        <a href="tel:+919345993268" class="contact-icon-link" aria-label="Call Monish">
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.211-.992-.55-1.34L20.07 15.636a2.25 2.25 0 00-3.182 0l-1.97 1.97-1.56-1.56a11.25 11.25 0 01-6.176-6.176l1.56-1.56 1.97-1.97a2.25 2.25 0 000-3.182L6.841 3.9a2.25 2.25 0 00-1.34-.55H4.125A2.25 2.25 0 001.875 5.625v1.125z" />
+                            </svg>
+                        </a>
+                        <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="contact-icon-link" aria-label="Monish's GitHub Profile">
+                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // --- 3D Hero Scene ---
+            let heroScene, heroCamera, heroRenderer, heroModel, heroControls;
+            function initHeroScene() {
+                heroScene = new THREE.Scene();
+                heroCamera = new THREE.PerspectiveCamera(25, window.innerWidth / window.innerHeight, 0.1, 1000);
+                heroCamera.position.set(20, 10, 25);
+                
+                const canvas = document.getElementById('hero-canvas');
+                heroRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+                heroRenderer.setSize(window.innerWidth, window.innerHeight);
+                heroRenderer.setPixelRatio(window.devicePixelRatio);
+
+                heroControls = new OrbitControls(heroCamera, heroRenderer.domElement);
+                heroControls.enableZoom = false;
+                heroControls.enablePan = false;
+                heroControls.maxPolarAngle = Math.PI / 2;
+                heroControls.minPolarAngle = Math.PI / 2 - 0.2;
+                heroControls.autoRotate = true;
+                heroControls.autoRotateSpeed = 0.5;
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+                heroScene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+                directionalLight.position.set(5, 10, 7.5);
+                heroScene.add(directionalLight);
+
+                const loader = new GLTFLoader();
+                loader.load('https://raw.githubusercontent.com/adrianhajdin/project_3D_developer_portfolio/main/public/desktop_pc/scene.gltf', (gltf) => {
+                    heroModel = gltf.scene;
+                    heroModel.scale.set(70, 70, 70);
+                    heroModel.position.set(0, -3.5, -1.5);
+                    heroScene.add(heroModel);
+                });
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    heroControls.update();
+                    heroRenderer.render(heroScene, heroCamera);
+                };
+                animate();
+
+                 window.addEventListener('resize', () => {
+                    heroCamera.aspect = window.innerWidth / window.innerHeight;
+                    heroCamera.updateProjectionMatrix();
+                    heroRenderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+
+            // --- Interactive Tech Ball Scene ---
+            // DELETED THE OLD initTechScene() function that created the 3D balls
+
+            // --- DATA ---
+            const experienceData = [
+                { title: "AI & ML Developer", company: "Samsung PRISM", points: ["Developed AI reverse prompt generator analyzing images to create text prompts.", "Engineered AI proctoring system with real-time face detection.", "Utilized GANs for medical image segmentation and enhancement.", "Trained models using Python, TensorFlow, and OpenCV."] },
+                { title: "Full-Stack Developer", company: "Personal Projects", points: ["Architected 'API-Forge,' a no-code backend solution.", "Designed robust relational database systems for various applications.", "Developed a full-featured social media website.", "Created scalable cloud networks using CISCO simulation tools."] }
+            ];
+
+            const projectsData = [
+                { name: "Medical Image Segmentation", desc: "Utilized GANs for segmenting bone fractures in medical imagery.", tags: [{n: "GANs", c: "blue"}, {n: "AI/ML", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN@main/Screenshot%202024-02-27%20121021.png" },
+                { name: "API-Forge: No-Code Backend", desc: "A no-code backend solution simplifying API creation, accelerating development.", tags: [{n: "Backend", c: "blue"}, {n: "Node.js", c: "green"}, {n: "API", c: "pink"}], link: "https://github.com/Monish21072004/API-Forge", image: "https://placehold.co/600x400/151030/aaa6c3?text=API-Forge" },
+                { name: "Dragon Proctor: AI Proctoring", desc: "AI proctoring solution with real-time facial detection and gaze tracking.", tags: [{n: "CompVision", c: "blue"}, {n: "AI", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/dragon_proctor", image: "https://cdn.jsdelivr.net/gh/Monish21072004/dragon_proctor@main/Screenshot%202024-02-27%20120120.png" },
+                { name: "AI Reverse Prompt Generator", desc: "An AI tool (Samsung PRISM) that analyzes images to generate text prompts.", tags: [{n: "AI/ML", c: "blue"}, {n: "Python", c: "green"}, {n: "NLP", c: "pink"}], link: "https://github.com/Monish21072004/23GAI32_Reverse_prompt_generator-main", image: "https://cdn.jsdelivr.net/gh/Monish21072004/23GAI32_Reverse_prompt_generator-main@main/Screenshot%202024-02-27%20121323.png" },
+                { name: "Smart Attendance System", desc: "Automated attendance system using facial recognition to streamline management.", tags: [{n: "FaceRec", c: "blue"}, {n: "OpenCV", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Smart-Attendance-System", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Smart-Attendance-System@main/Screenshot%202024-02-27%20120614.png" },
+                { name: "Land Slide Detection", desc: "An AI model to detect and predict land slides from satellite imagery or geographical data.", tags: [{n: "AI/ML", c: "blue"}, {n: "DeepLearning", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Land-Slide-Detection-.git", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Land-Slide-Detection-@main/Screenshot%202024-03-03%20141655.png" },
+                { name: "SafeNet Security Suite", desc: "A comprehensive security application focused on providing a secure online experience through various protection modules.", tags: [{n: "Security", c: "blue"}, {n: "Python", c: "green"}, {n: "Networking", c: "pink"}], link: "https://github.com/Monish21072004/SafeNet.git", image: "https://placehold.co/600x400/151030/aaa6c3?text=SafeNet" },
+                { name: "Live Higher Studies News", desc: "A web application that aggregates and displays live news and updates related to higher education opportunities and trends.", tags: [{n: "WebApp", c: "blue"}, {n: "NewsAPI", c: "green"}, {n: "Frontend", c: "pink"}], link: "https://github.com/Monish21072004/Live-Higher-Studies-News-.git", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Live-Higher-Studies-News-@main/Screenshot%202024-03-03%20141933.png" },
+                { name: "DRAGON CHASE Game", desc: "An interactive 2D game developed with a focus on gameplay mechanics and user engagement.", tags: [{n: "GameDev", c: "blue"}, {n: "Python", c: "green"}, {n: "Pygame", c: "pink"}], link: "https://github.com/Monish21072004/DRAGON-CHASE.git", image: "https://cdn.jsdelivr.net/gh/Monish21072004/DRAGON-CHASE@main/Screenshot%202024-03-03%20142211.png" },
+                { name: "Face Emotion Recognition", desc: "An AI application that detects and classifies human emotions from facial expressions in real-time using computer vision.", tags: [{n: "AI/ML", c: "blue"}, {n: "ComputerVision", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/Face-Emotion-Recognition.git", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Face-Emotion-Recognition@main/Screenshot%202024-03-03%20142514.png" },
+                { name: "Store Management System", desc: "A robust database-driven application for managing store inventory, sales, and customer data efficiently.", tags: [{n: "Database", c: "blue"}, {n: "SQL", c: "green"}, {n: "Backend", c: "pink"}], link: "https://github.com/Monish21072004/Store_Management.git", image: "https://placehold.co/600x400/151030/aaa6c3?text=Store+Management" }
+            ];
+
+            const technologiesData = [
+                { name: "Python", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" },
+                { name: "HTML5", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg" },
+                { name: "SQL", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/mysql/mysql-original.svg" },
+                { name: "Oracle", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/oracle/oracle-original.svg" },
+                { name: "PyTorch", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/pytorch/pytorch-original.svg" },
+                { name: "JavaScript", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" },
+                { name: "CSS3", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg" },
+                { name: "Node.js", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original.svg" },
+                { name: "AWS", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/amazonwebservices/amazonwebservices-original.svg" },
+                { name: "Docker", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original.svg" },
+                { name: "Kubernetes", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/kubernetes/kubernetes-plain.svg" },
+                { name: "Git", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/git/git-original.svg" },
+                { name: "TensorFlow", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/tensorflow/tensorflow-original.svg" },
+                { name: "OpenCV", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/opencv/opencv-original.svg" },
+                { name: "C++", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/cplusplus/cplusplus-original.svg" }
+            ];
+
+            // --- DYNAMIC CONTENT ---
+            const experienceContainer = document.getElementById('experience-container');
+            experienceData.forEach((exp, index) => {
+                const isLeft = index % 2 === 0;
+                const container = document.createElement('div');
+                container.className = `timeline-container ${isLeft ? 'left' : 'right'} gsap-reveal`;
+                container.innerHTML = `
+                    <div class="timeline-content">
+                        <h3 class="text-white text-2xl font-bold">${exp.title}</h3>
+                        <p class="text-secondary-text text-lg font-semibold m-0">${exp.company}</p>
+                        <ul class="mt-4 list-disc ml-5 space-y-2">
+                           ${exp.points.map(p => `<li class="text-sm">${p}</li>`).join('')}
+                        </ul>
+                    </div>`;
+                experienceContainer.appendChild(container);
+            });
+
+            const projectsContainer = document.getElementById('projects-container');
+            projectsData.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'project-card p-5 rounded-2xl sm:w-[360px] w-full gsap-reveal';
+                card.innerHTML = `
+                    <div class="relative w-full h-[230px]">
+                        <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-2xl" />
+                        <a href="${p.link}" target="_blank" class="github-link"><img src="https://raw.githubusercontent.com/adrianhajdin/project_3D_developer_portfolio/main/src/assets/github.png" class="w-1/2 h-1/2" /></a>
+                    </div>
+                    <div class="mt-5"><h3 class="text-white font-bold text-2xl">${p.name}</h3><p class="mt-2 text-sm">${p.desc}</p></div>
+                    <div class="mt-4 flex gap-2">${p.tags.map(t => `<p class="tag ${t.c}-text-gradient">#${t.n}</p>`).join('')}</div>`;
+                projectsContainer.appendChild(card);
+            });
+
+            const techContainer = document.getElementById('tech-icons-container');
+            technologiesData.forEach(tech => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'tech-icon-wrapper gsap-reveal';
+                wrapper.innerHTML = `
+                    <img src="${tech.icon}" alt="${tech.name}" class="w-16 h-16 object-contain" />
+                    <span class="tech-name">${tech.name}</span>
+                `;
+                techContainer.appendChild(wrapper);
+            });
+            
+            // --- GSAP ANIMATIONS ---
+            gsap.utils.toArray('.gsap-reveal').forEach(el => {
+                gsap.fromTo(el, {y: 50, autoAlpha: 0}, { y: 0, autoAlpha: 1, duration: 1, ease: "power3.out",
+                    scrollTrigger: { trigger: el, start: "top 90%" }
+                });
+            });
+
+            // Initialize scenes
+            initHeroScene();
+            // DELETED initTechScene();
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
