@@ -69,7 +69,7 @@
             pointer-events: none;
             z-index: 9999;
             transform: translate(-50%, -50%);
-            transition: transform 0.15s ease-out, background-color 0.2s, border-color 0.2s;
+            transition: transform 0.1s ease-out, background-color 0.2s, border-color 0.2s;
             mix-blend-mode: difference;
         }
         .custom-cursor.clicked {
@@ -412,7 +412,8 @@
                 window.addEventListener('mousemove', (event) => {
                     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                    gsap.to(customCursor, { duration: 0.1, x: event.clientX, y: event.clientY });
+                    customCursor.style.left = `${event.clientX}px`;
+                    customCursor.style.top = `${event.clientY}px`;
                 });
 
                 window.addEventListener('mousedown', () => {
