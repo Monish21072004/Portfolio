@@ -31,6 +31,10 @@
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--bg-color);
+            background-image: url('https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Background.PNG');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             color: var(--secondary-text);
             overflow-x: hidden;
             position: relative; /* For the subtle background */
@@ -42,11 +46,11 @@
             left: 0;
             width: 100%;
             height: 100%;
+            background-color: rgba(5, 8, 22, 0.7); /* Dark overlay */
             background-image: 
                 linear-gradient(0deg, rgba(145,94,255,0.02) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(145,94,255,0.02) 1px, transparent 1px);
             background-size: 50px 50px; /* Adjust grid size as needed */
-            opacity: 0.1; /* Make it very subtle */
             z-index: -1; /* Ensure it's behind everything */
             pointer-events: none; /* Make sure it doesn't interfere with interactions */
         }
@@ -298,7 +302,6 @@
             let heroScene, heroCamera, heroRenderer, controls, synapticWeb, pulses = [];
             const clock = new THREE.Clock();
             const mouse = new THREE.Vector2();
-            const interactionPoint = new THREE.Vector3();
             const customCursor = document.getElementById('custom-cursor');
 
             function initHeroScene() {
@@ -342,7 +345,7 @@
                 synapticWeb.add(neurons);
 
                 // Synapses (Lines)
-                const edges = new THREE.EdgesGeometry(webGeometry, 1); // thresholdAngle = 1
+                const edges = new THREE.EdgesGeometry(webGeometry, 1);
                 const synapseMaterial = new THREE.LineBasicMaterial({
                     color: 0x915EFF,
                     transparent: true,
@@ -361,7 +364,7 @@
                     const pulse = new THREE.Mesh(pulseGeometry, pulseMaterial);
                     pulse.visible = false;
                     pulses.push(pulse);
-                    heroScene.add(pulse);
+                    synapticWeb.add(pulse); // Add to group for rotation
                 }
 
                 function firePulse() {
@@ -389,8 +392,6 @@
                 
                 setInterval(firePulse, 100);
 
-                const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-
                 const animate = () => {
                     requestAnimationFrame(animate);
                     const elapsedTime = clock.getElapsedTime();
@@ -411,7 +412,7 @@
                 window.addEventListener('mousemove', (event) => {
                     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                    gsap.to(customCursor, { duration: 0.2, x: event.clientX, y: event.clientY });
+                    gsap.to(customCursor, { duration: 0.1, x: event.clientX, y: event.clientY });
                 });
 
                 window.addEventListener('mousedown', () => {
@@ -522,4 +523,5 @@
     </script>
 </body>
 </html>
+
 
