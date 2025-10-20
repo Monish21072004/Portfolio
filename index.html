@@ -6,8 +6,7 @@
     <title>Monish V | 3D Developer Portfolio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Modern Approach: Import Maps for reliable THREE.js loading -->
-    <script type="importmap">
+    <!-- Modern Approach: Import Maps for reliable THREE.js loading --><script type="importmap">
     {
         "imports": {
             "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
@@ -26,6 +25,7 @@
             --secondary-text: #aaa6c3;
             --card-bg: #151030;
             --tertiary-bg: #100d25;
+            --cursor-color: #00E5FF;
         }
         html { scroll-behavior: smooth; }
         body {
@@ -33,7 +33,46 @@
             background-color: var(--bg-color);
             color: var(--secondary-text);
             overflow-x: hidden;
+            position: relative; /* For the subtle background */
         }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(0deg, rgba(145,94,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(145,94,255,0.02) 1px, transparent 1px);
+            background-size: 50px 50px; /* Adjust grid size as needed */
+            opacity: 0.1; /* Make it very subtle */
+            z-index: -1; /* Ensure it's behind everything */
+            pointer-events: none; /* Make sure it doesn't interfere with interactions */
+        }
+
+        #hero-canvas { cursor: none; } /* Hide default cursor */
+        
+        /* Custom Cursor */
+        .custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--cursor-color);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.15s ease-out, background-color 0.2s, border-color 0.2s;
+            mix-blend-mode: difference;
+        }
+        .custom-cursor.clicked {
+            transform: translate(-50%, -50%) scale(0.8);
+            background-color: var(--cursor-color);
+        }
+
         .header {
             background-color: rgba(5, 8, 22, 0.85);
             backdrop-filter: blur(12px);
@@ -63,7 +102,7 @@
         .tag { font-size: 14px; font-weight: bold; }
         .blue-text-gradient { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .green-text-gradient { background: linear-gradient(90deg, #22c55e, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .pink-text-gradient { background: linear-gradient(90deg, #ec4899, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .pink-text-gradient { background: linear-gradient(90deg, #ec4899, #d94ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
         /* Timeline */
         .timeline { position: relative; max-width: 1200px; margin: 0 auto; }
@@ -145,6 +184,8 @@
     </style>
 </head>
 <body class="relative">
+    <div id="custom-cursor" class="custom-cursor"></div>
+
     <header class="header fixed top-0 left-0 w-full z-20 px-4 sm:px-8 py-5">
         <div class="w-full flex justify-between items-center max-w-7xl mx-auto">
             <a href="#" class="flex items-center gap-2" onclick="window.scrollTo(0,0)">
@@ -162,6 +203,16 @@
 
     <section id="home" class="relative w-full h-screen">
         <canvas id="hero-canvas" class="absolute inset-0"></canvas>
+        <div class="absolute inset-0 flex justify-center items-center z-10 pointer-events-none">
+            <div class="text-center">
+                <h1 class="text-white font-black text-5xl sm:text-6xl lg:text-7xl lg:leading-tight mt-2">
+                    Hi, I'm <span class="text-[var(--primary-accent)]">Monish</span>
+                </h1>
+                <p class="text-[#dfd9ff] font-medium text-lg sm:text-xl lg:text-2xl mt-4">
+                    I develop AI-powered applications, user<br class="sm:block hidden" /> interfaces, and full-stack web solutions.
+                </p>
+            </div>
+        </div>
     </section>
 
     <main class="relative z-10">
@@ -176,19 +227,6 @@
                         I'm a skilled and versatile developer with a strong focus on Python for backend development and AI/ML applications. My expertise extends to robust database management with SQL and Oracle, and I enjoy crafting clean, user-friendly frontends using HTML. With a solid foundation in data-driven solutions, I excel at building efficient and scalable applications that solve real-world problems. I'm a fast learner who thrives on collaboration. Let's create something amazing together!
                     </p>
                 </div>
-                <div class="flex-1 w-full h-80 gsap-reveal">
-                    <!-- The text from home section -->
-                    <div class="flex items-start gap-5 h-full justify-center">
-                        <div>
-                            <h1 class="text-white font-black text-5xl sm:text-6xl lg:text-7xl lg:leading-tight mt-2">
-                                Hi, I'm <span class="text-[var(--primary-accent)]">Monish</span>
-                            </h1>
-                            <p class="text-[#dfd9ff] font-medium text-lg sm:text-xl lg:text-2xl mt-4">
-                                I develop AI-powered applications, user<br class="sm:block hidden" /> interfaces, and full-stack web solutions.
-                            </p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -198,8 +236,7 @@
                 <h2 class="section-head text-4xl sm:text-5xl lg:text-6xl">Work Experience.</h2>
             </div>
             <div id="experience-container" class="timeline mt-20">
-                 <!-- Experience Timeline Injected Here -->
-            </div>
+                 <!-- Experience Timeline Injected Here --></div>
         </section>
         
         <section id="tech" class="section-wrapper max-w-7xl mx-auto">
@@ -207,8 +244,7 @@
                  <h2 class="section-head text-4xl sm:text-5xl lg:text-6xl">Technologies.</h2>
             </div>
             <div id="tech-icons-container" class="mt-20 flex flex-wrap gap-10 justify-center">
-                <!-- Tech Icons Injected Here -->
-            </div>
+                <!-- Tech Icons Injected Here --></div>
         </section>
 
         <section id="projects" class="section-wrapper max-w-7xl mx-auto">
@@ -222,8 +258,7 @@
                 </p>
             </div>
             <div id="projects-container" class="mt-20 flex flex-wrap gap-8 justify-center">
-                <!-- Projects injected here -->
-            </div>
+                <!-- Projects injected here --></div>
         </section>
         
         <section id="contact" class="section-wrapper max-w-7xl mx-auto">
@@ -255,62 +290,144 @@
     
     <script type="module">
         import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
         document.addEventListener('DOMContentLoaded', () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // --- 3D Hero Scene ---
-            let heroScene, heroCamera, heroRenderer, heroModel, heroControls;
+            let heroScene, heroCamera, heroRenderer, controls, synapticWeb, pulses = [];
+            const clock = new THREE.Clock();
+            const mouse = new THREE.Vector2();
+            const interactionPoint = new THREE.Vector3();
+            const customCursor = document.getElementById('custom-cursor');
+
             function initHeroScene() {
                 heroScene = new THREE.Scene();
-                heroCamera = new THREE.PerspectiveCamera(25, window.innerWidth / window.innerHeight, 0.1, 1000);
-                heroCamera.position.set(20, 10, 25);
+                heroCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+                heroCamera.position.set(0, 0, 12);
                 
                 const canvas = document.getElementById('hero-canvas');
                 heroRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
                 heroRenderer.setSize(window.innerWidth, window.innerHeight);
-                heroRenderer.setPixelRatio(window.devicePixelRatio);
+                heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-                heroControls = new OrbitControls(heroCamera, heroRenderer.domElement);
-                heroControls.enableZoom = false;
-                heroControls.enablePan = false;
-                heroControls.maxPolarAngle = Math.PI / 2;
-                heroControls.minPolarAngle = Math.PI / 2 - 0.2;
-                heroControls.autoRotate = true;
-                heroControls.autoRotateSpeed = 0.5;
+                controls = new OrbitControls(heroCamera, heroRenderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.enablePan = false;
+                controls.minDistance = 8;
+                controls.maxDistance = 20;
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 0.2;
 
-                const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+                const ambientLight = new THREE.AmbientLight(0x404040, 2);
                 heroScene.add(ambientLight);
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
-                directionalLight.position.set(5, 10, 7.5);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+                directionalLight.position.set(5, 5, 5);
                 heroScene.add(directionalLight);
 
-                const loader = new GLTFLoader();
-                loader.load('https://raw.githubusercontent.com/adrianhajdin/project_3D_developer_portfolio/main/public/desktop_pc/scene.gltf', (gltf) => {
-                    heroModel = gltf.scene;
-                    heroModel.scale.set(70, 70, 70);
-                    heroModel.position.set(0, -3.5, -1.5);
-                    heroScene.add(heroModel);
+                // --- Create The Synaptic Web ---
+                synapticWeb = new THREE.Group();
+                const webGeometry = new THREE.IcosahedronGeometry(5, 4);
+                
+                // Neurons (Points)
+                const neuronMaterial = new THREE.PointsMaterial({
+                    color: 0x00E5FF,
+                    size: 0.07,
+                    blending: THREE.AdditiveBlending,
+                    transparent: true,
+                    opacity: 0.8
                 });
+                const neurons = new THREE.Points(webGeometry, neuronMaterial);
+                synapticWeb.add(neurons);
+
+                // Synapses (Lines)
+                const edges = new THREE.EdgesGeometry(webGeometry, 1); // thresholdAngle = 1
+                const synapseMaterial = new THREE.LineBasicMaterial({
+                    color: 0x915EFF,
+                    transparent: true,
+                    opacity: 0.15
+                });
+                const synapses = new THREE.LineSegments(edges, synapseMaterial);
+                synapticWeb.add(synapses);
+                
+                heroScene.add(synapticWeb);
+
+                // --- Create Pulses ---
+                const pulseGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+                const pulseMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, blending: THREE.AdditiveBlending });
+                const pulseCount = 30;
+                for (let i = 0; i < pulseCount; i++) {
+                    const pulse = new THREE.Mesh(pulseGeometry, pulseMaterial);
+                    pulse.visible = false;
+                    pulses.push(pulse);
+                    heroScene.add(pulse);
+                }
+
+                function firePulse() {
+                    const pulse = pulses.find(p => !p.visible);
+                    if (!pulse) return;
+
+                    const edgeCount = edges.attributes.position.count / 2;
+                    const edgeIndex = Math.floor(Math.random() * edgeCount);
+                    
+                    const start = new THREE.Vector3().fromBufferAttribute(edges.attributes.position, edgeIndex * 2);
+                    const end = new THREE.Vector3().fromBufferAttribute(edges.attributes.position, edgeIndex * 2 + 1);
+
+                    pulse.position.copy(start);
+                    pulse.visible = true;
+
+                    gsap.to(pulse.position, {
+                        x: end.x, y: end.y, z: end.z,
+                        duration: THREE.MathUtils.randFloat(1, 3),
+                        ease: "power1.inOut",
+                        onComplete: () => {
+                            pulse.visible = false;
+                        }
+                    });
+                }
+                
+                setInterval(firePulse, 100);
+
+                const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
                 const animate = () => {
                     requestAnimationFrame(animate);
-                    heroControls.update();
+                    const elapsedTime = clock.getElapsedTime();
+
+                    synapticWeb.rotation.y += 0.0005;
+                    synapticWeb.scale.setScalar(1 + Math.sin(elapsedTime * 0.5) * 0.02);
+                    
+                    heroCamera.position.x += (mouse.x * 1.5 - heroCamera.position.x) * 0.02;
+                    heroCamera.position.y += (mouse.y * 1.5 - heroCamera.position.y) * 0.02;
+                    heroCamera.lookAt(heroScene.position);
+
+                    controls.update();
                     heroRenderer.render(heroScene, heroCamera);
                 };
                 animate();
+                
+                // --- CURSOR LOGIC ---
+                window.addEventListener('mousemove', (event) => {
+                    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                    gsap.to(customCursor, { duration: 0.2, x: event.clientX, y: event.clientY });
+                });
 
-                 window.addEventListener('resize', () => {
+                window.addEventListener('mousedown', () => {
+                    customCursor.classList.add('clicked');
+                });
+                window.addEventListener('mouseup', () => {
+                    customCursor.classList.remove('clicked');
+                });
+                
+                window.addEventListener('resize', () => {
                     heroCamera.aspect = window.innerWidth / window.innerHeight;
                     heroCamera.updateProjectionMatrix();
                     heroRenderer.setSize(window.innerWidth, window.innerHeight);
+                    heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 });
             }
-
-            // --- Interactive Tech Ball Scene ---
-            // DELETED THE OLD initTechScene() function that created the 3D balls
 
             // --- DATA ---
             const experienceData = [
@@ -401,7 +518,6 @@
 
             // Initialize scenes
             initHeroScene();
-            // DELETED initTechScene();
         });
     </script>
 </body>
