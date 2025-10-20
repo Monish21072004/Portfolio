@@ -76,10 +76,10 @@
         .timeline-content { padding: 20px 30px; background: var(--tertiary-bg); position: relative; border-radius: 8px; }
 
         @media screen and (max-width: 768px) {
-          .timeline::after { left: 31px; }
-          .timeline-container { width: 100%; padding-left: 70px; padding-right: 25px; }
-          .timeline-container.right { left: 0%; }
-          .timeline-container.left::after, .timeline-container.right::after { left: 18px; }
+            .timeline::after { left: 31px; }
+            .timeline-container { width: 100%; padding-left: 70px; padding-right: 25px; }
+            .timeline-container.right { left: 0%; }
+            .timeline-container.left::after, .timeline-container.right::after { left: 18px; }
         }
 
         /* GSAP */
@@ -239,7 +239,7 @@
                         </a>
                         <a href="tel:+919345993268" class="contact-icon-link" aria-label="Call Monish">
                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.211-.992-.55-1.34L20.07 15.636a2.25 2.25 0 00-3.182 0l-1.97 1.97-1.56-1.56a11.25 11.25 0 01-6.176-6.176l1.56-1.56 1.97-1.97a2.25 2.25 0 000-3.182L6.841 3.9a2.25 2.25 0 00-1.34-.55H4.125A2.25 2.25 0 001.875 5.625v1.125z" />
+                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.211-.992-.55-1.34L20.07 15.636a2.25 2.25 0 00-3.182 0l-1.97 1.97-1.56-1.56a11.25 11.25 0 01-6.176-6.176l1.56-1.56 1.97-1.97a2.25 2.25 0 000-3.182L6.841 3.9a2.25 2.25 0 00-1.34-.55H4.125A2.25 2.25 0 001.875 5.625v1.125z" />
                             </svg>
                         </a>
                         <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="contact-icon-link" aria-label="Monish's GitHub Profile">
@@ -319,17 +319,17 @@
             ];
 
             const projectsData = [
-                { name: "Medical Image Segmentation", desc: "Utilized GANs for segmenting bone fractures in medical imagery.", tags: [{n: "GANs", c: "blue"}, {n: "AI/ML", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN@main/Screenshot%202024-02-27%20121021.png" },
-                { name: "API-Forge: No-Code Backend", desc: "A no-code backend solution simplifying API creation, accelerating development.", tags: [{n: "Backend", c: "blue"}, {n: "Node.js", c: "green"}, {n: "API", c: "pink"}], link: "https://github.com/Monish21072004/API-Forge", image: "https://placehold.co/600x400/151030/aaa6c3?text=API-Forge" },
-                { name: "Dragon Proctor: AI Proctoring", desc: "AI proctoring solution with real-time facial detection and gaze tracking.", tags: [{n: "CompVision", c: "blue"}, {n: "AI", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/dragon_proctor", image: "https://cdn.jsdelivr.net/gh/Monish21072004/dragon_proctor@main/Screenshot%202024-02-27%20120120.png" },
-                { name: "AI Reverse Prompt Generator", desc: "An AI tool (Samsung PRISM) that analyzes images to generate text prompts.", tags: [{n: "AI/ML", c: "blue"}, {n: "Python", c: "green"}, {n: "NLP", c: "pink"}], link: "https://github.com/Monish21072004/23GAI32_Reverse_prompt_generator-main", image: "https://cdn.jsdelivr.net/gh/Monish21072004/23GAI32_Reverse_prompt_generator-main@main/Screenshot%202024-02-27%20121323.png" },
-                { name: "Smart Attendance System", desc: "Automated attendance system using facial recognition to streamline management.", tags: [{n: "FaceRec", c: "blue"}, {n: "OpenCV", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Smart-Attendance-System", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Smart-Attendance-System@main/Screenshot%202024-02-27%20120614.png" },
-                { name: "Land Slide Detection", desc: "An AI model to detect and predict land slides from satellite imagery or geographical data.", tags: [{n: "AI/ML", c: "blue"}, {n: "DeepLearning", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Land-Slide-Detection-.git", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Land-Slide-Detection-@main/Screenshot%202024-03-03%20141655.png" },
-                { name: "SafeNet Security Suite", desc: "A comprehensive security application focused on providing a secure online experience through various protection modules.", tags: [{n: "Security", c: "blue"}, {n: "Python", c: "green"}, {n: "Networking", c: "pink"}], link: "https://github.com/Monish21072004/SafeNet.git", image: "https://placehold.co/600x400/151030/aaa6c3?text=SafeNet" },
-                { name: "Live Higher Studies News", desc: "A web application that aggregates and displays live news and updates related to higher education opportunities and trends.", tags: [{n: "WebApp", c: "blue"}, {n: "NewsAPI", c: "green"}, {n: "Frontend", c: "pink"}], link: "https://github.com/Monish21072004/Live-Higher-Studies-News-.git", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Live-Higher-Studies-News-@main/Screenshot%202024-03-03%20141933.png" },
-                { name: "DRAGON CHASE Game", desc: "An interactive 2D game developed with a focus on gameplay mechanics and user engagement.", tags: [{n: "GameDev", c: "blue"}, {n: "Python", c: "green"}, {n: "Pygame", c: "pink"}], link: "https://github.com/Monish21072004/DRAGON-CHASE.git", image: "https://cdn.jsdelivr.net/gh/Monish21072004/DRAGON-CHASE@main/Screenshot%202024-03-03%20142211.png" },
-                { name: "Face Emotion Recognition", desc: "An AI application that detects and classifies human emotions from facial expressions in real-time using computer vision.", tags: [{n: "AI/ML", c: "blue"}, {n: "ComputerVision", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/Face-Emotion-Recognition.git", image: "https://cdn.jsdelivr.net/gh/Monish21072004/Face-Emotion-Recognition@main/Screenshot%202024-03-03%20142514.png" },
-                { name: "Store Management System", desc: "A robust database-driven application for managing store inventory, sales, and customer data efficiently.", tags: [{n: "Database", c: "blue"}, {n: "SQL", c: "green"}, {n: "Backend", c: "pink"}], link: "https://github.com/Monish21072004/Store_Management.git", image: "https://placehold.co/600x400/151030/aaa6c3?text=Store+Management" }
+                { name: "Medical Image Segmentation", desc: "Utilized GANs for segmenting bone fractures in medical imagery.", tags: [{n: "GANs", c: "blue"}, {n: "AI/ML", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/medical_image_segmentation_usi.png" },
+                { name: "API-Forge: No-Code Backend", desc: "A no-code backend solution simplifying API creation, accelerating development.", tags: [{n: "Backend", c: "blue"}, {n: "Node.js", c: "green"}, {n: "API", c: "pink"}], link: "https://github.com/Monish21072004/API-Forge", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/api_forge__no_code_backend_a_n.png" },
+                { name: "Dragon Proctor: AI Proctoring", desc: "AI proctoring solution with real-time facial detection and gaze tracking.", tags: [{n: "CompVision", c: "blue"}, {n: "AI", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/dragon_proctor", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/dragon_proctor__ai_proctoring_.png" },
+                { name: "AI Reverse Prompt Generator", desc: "An AI tool (Samsung PRISM) that analyzes images to generate text prompts.", tags: [{n: "AI/ML", c: "blue"}, {n: "Python", c: "green"}, {n: "NLP", c: "pink"}], link: "https://github.com/Monish21072004/23GAI32_Reverse_prompt_generator-main", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/ai_reverse_prompt_generator_an.png" },
+                { name: "Smart Attendance System", desc: "Automated attendance system using facial recognition to streamline management.", tags: [{n: "FaceRec", c: "blue"}, {n: "OpenCV", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Smart-Attendance-System", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/smart_attendance_system_automa.png" },
+                { name: "Land Slide Detection", desc: "An AI model to detect and predict land slides from satellite imagery or geographical data.", tags: [{n: "AI/ML", c: "blue"}, {n: "DeepLearning", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Land-Slide-Detection-.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/land_slide_detection_an_ai_mod.png" },
+                { name: "SafeNet Security Suite", desc: "A comprehensive security application focused on providing a secure online experience through various protection modules.", tags: [{n: "Security", c: "blue"}, {n: "Python", c: "green"}, {n: "Networking", c: "pink"}], link: "https://github.com/Monish21072004/SafeNet.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/tray_icon.png" },
+                { name: "Live Higher Studies News", desc: "A web application that aggregates and displays live news and updates related to higher education opportunities and trends.", tags: [{n: "WebApp", c: "blue"}, {n: "NewsAPI", c: "green"}, {n: "Frontend", c: "pink"}], link: "https://github.com/Monish21072004/Live-Higher-Studies-News-.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Higher%20Studies.png" },
+                { name: "DRAGON CHASE Game", desc: "An interactive 2D game developed with a focus on gameplay mechanics and user engagement.", tags: [{n: "GameDev", c: "blue"}, {n: "Python", c: "green"}, {n: "Pygame", c: "pink"}], link: "https://github.com/Monish21072004/DRAGON-CHASE.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Dragon_Chase.png" },
+                { name: "Face Emotion Recognition", desc: "An AI application that detects and classifies human emotions from facial expressions in real-time using computer vision.", tags: [{n: "AI/ML", c: "blue"}, {n: "ComputerVision", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/Face-Emotion-Recognition.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/face_emotion_recognition_an_ai.png" },
+                { name: "Store Management System", desc: "A robust database-driven application for managing store inventory, sales, and customer data efficiently.", tags: [{n: "Database", c: "blue"}, {n: "SQL", c: "green"}, {n: "Backend", c: "pink"}], link: "https://github.com/Monish21072004/Store_Management.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/store_management_system_a_robu.png" }
             ];
 
             const technologiesData = [
@@ -373,7 +373,7 @@
                 card.className = 'project-card p-5 rounded-2xl sm:w-[360px] w-full gsap-reveal';
                 card.innerHTML = `
                     <div class="relative w-full h-[230px]">
-                        <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-2xl" />
+                        <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-2xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/151030/aaa6c3?text=Image+Not+Found';" />
                         <a href="${p.link}" target="_blank" class="github-link"><img src="https://raw.githubusercontent.com/adrianhajdin/project_3D_developer_portfolio/main/src/assets/github.png" class="w-1/2 h-1/2" /></a>
                     </div>
                     <div class="mt-5"><h3 class="text-white font-bold text-2xl">${p.name}</h3><p class="mt-2 text-sm">${p.desc}</p></div>
@@ -406,9 +406,4 @@
     </script>
 </body>
 </html>
-
-
-
-
-
 
