@@ -68,7 +68,7 @@
             border-radius: 50%;
             pointer-events: none;
             z-index: 9999;
-            transform: translate(-50%, -50%);
+            /* transform is now set by JS for instant feedback */
             transition: transform 0.1s ease-out, background-color 0.2s, border-color 0.2s;
             mix-blend-mode: difference;
         }
@@ -195,13 +195,29 @@
             <a href="#" class="flex items-center gap-2" onclick="window.scrollTo(0,0)">
                 <span class="text-white text-2xl font-bold">Monish V</span>
             </a>
-            <nav class="hidden md:flex list-none gap-10">
+            <nav id="desktop-nav" class="hidden md:flex list-none gap-10">
                 <a href="#about" class="nav-link text-lg font-medium">About</a>
                 <a href="#experience" class="nav-link text-lg font-medium">Experience</a>
                 <a href="#tech" class="nav-link text-lg font-medium">Tech</a>
                 <a href="#projects" class="nav-link text-lg font-medium">Projects</a>
                 <a href="#contact" class="nav-link text-lg font-medium">Contact</a>
             </nav>
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden flex items-center">
+                <button id="mobile-menu-button" class="text-white focus:outline-none z-30">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 w-full bg-[var(--bg-color)] bg-opacity-95 backdrop-blur-sm">
+            <div class="flex flex-col items-center py-4 space-y-4">
+                <a href="#about" class="nav-link mobile-nav-link text-lg font-medium">About</a>
+                <a href="#experience" class="nav-link mobile-nav-link text-lg font-medium">Experience</a>
+                <a href="#tech" class="nav-link mobile-nav-link text-lg font-medium">Tech</a>
+                <a href="#projects" class="nav-link mobile-nav-link text-lg font-medium">Projects</a>
+                <a href="#contact" class="nav-link mobile-nav-link text-lg font-medium">Contact</a>
+            </div>
         </div>
     </header>
 
@@ -247,7 +263,7 @@
             <div class="gsap-reveal text-center">
                  <h2 class="section-head text-4xl sm:text-5xl lg:text-6xl">Technologies.</h2>
             </div>
-            <div id="tech-icons-container" class="mt-20 flex flex-wrap gap-10 justify-center">
+            <div id="tech-icons-container" class="mt-20 flex flex-wrap gap-x-10 gap-y-20 justify-center">
                 <!-- Tech Icons Injected Here --></div>
         </section>
 
@@ -261,7 +277,7 @@
                     My projects demonstrate my skills through real-world examples. Each is briefly described with a link to its repository, showcasing my ability to tackle complex challenges, adapt to various technologies, and manage projects effectively.
                 </p>
             </div>
-            <div id="projects-container" class="mt-20 flex flex-wrap gap-8 justify-center">
+            <div id="projects-container" class="mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Projects injected here --></div>
         </section>
         
@@ -431,6 +447,21 @@
                 });
             }
 
+            // --- MOBILE MENU LOGIC ---
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            mobileNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+
             // --- DATA ---
             const experienceData = [
                 { title: "AI & ML Developer", company: "Samsung PRISM", points: ["Developed AI reverse prompt generator analyzing images to create text prompts.", "Engineered AI proctoring system with real-time face detection.", "Utilized GANs for medical image segmentation and enhancement.", "Trained models using Python, TensorFlow, and OpenCV."] },
@@ -460,7 +491,7 @@
                 { name: "JavaScript", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" },
                 { name: "CSS3", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg" },
                 { name: "Node.js", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original.svg" },
-                { name: "AWS", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/amazonwebservices/amazonwebservices-original.svg" },
+                { name: "AWS", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" },
                 { name: "Docker", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/docker/docker-original.svg" },
                 { name: "Kubernetes", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/kubernetes/kubernetes-plain.svg" },
                 { name: "Git", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/git/git-original.svg" },
@@ -489,7 +520,7 @@
             const projectsContainer = document.getElementById('projects-container');
             projectsData.forEach(p => {
                 const card = document.createElement('div');
-                card.className = 'project-card p-5 rounded-2xl sm:w-[360px] w-full gsap-reveal';
+                card.className = 'project-card p-5 rounded-2xl w-full gsap-reveal';
                 card.innerHTML = `
                     <div class="relative w-full h-[230px]">
                         <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-2xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/151030/aaa6c3?text=Image+Not+Found';" />
@@ -524,5 +555,4 @@
     </script>
 </body>
 </html>
-
 
