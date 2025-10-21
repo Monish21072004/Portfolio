@@ -418,8 +418,7 @@
             }, false);
 
             function initHeroScene() {
-                // ... [Full, working hero scene code from previous step] ...
-                 const heroScene = new THREE.Scene();
+                const heroScene = new THREE.Scene();
                 const heroCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
                 heroCamera.position.set(0, 0, 12);
                 const canvas = document.getElementById('hero-canvas');
@@ -507,12 +506,10 @@
                 
                 const orbGeometry = new THREE.IcosahedronGeometry(2, 5);
 
-                // Outer orb
                 const orbPointsMaterial = new THREE.PointsMaterial({ color: 0x915EFF, size: 0.03, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.8 });
                 const orbPoints = new THREE.Points(orbGeometry, orbPointsMaterial);
                 aboutScene.add(orbPoints);
 
-                // Inner orb
                 const innerOrbGeom = new THREE.IcosahedronGeometry(1, 5);
                 const innerOrbMaterial = new THREE.PointsMaterial({ color: 0x00E5FF, size: 0.04, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.7 });
                 const innerOrbPoints = new THREE.Points(innerOrbGeom, innerOrbMaterial);
@@ -576,7 +573,6 @@
                     soundsReady = true;
                 }
             });
-
             
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
@@ -600,7 +596,8 @@
                 { name: "Live Higher Studies News", category: "web", desc: "A web application that aggregates and displays live news and updates related to higher education opportunities and trends.", tags: [{n: "WebApp", c: "blue"}, {n: "NewsAPI", c: "green"}, {n: "Frontend", c: "pink"}], link: "https://github.com/Monish21072004/Live-Higher-Studies-News-.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Higher%20Studies.png" },
                 { name: "DRAGON CHASE Game", category: "game", desc: "An interactive 2D game developed with a focus on gameplay mechanics and user engagement.", tags: [{n: "GameDev", c: "blue"}, {n: "Python", c: "green"}, {n: "Pygame", c: "pink"}], link: "https://github.com/Monish21072004/DRAGON-CHASE.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Dragon_Chase.png" },
                 { name: "Face Emotion Recognition", category: "ai", desc: "An AI application that detects and classifies human emotions from facial expressions in real-time using computer vision.", tags: [{n: "AI/ML", c: "blue"}, {n: "ComputerVision", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/Face-Emotion-Recognition.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/face_emotion_recognition_an_ai.png" },
-                { name: "Store Management System", category: "software", desc: "A robust database-driven application for managing store inventory, sales, and customer data efficiently.", tags: [{n: "Database", c: "blue"}, {n: "SQL", c: "green"}, {n: "Backend", c: "pink"}], link: "https://github.com/Monish21072004/Store_Management.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/store_management_system_a_robu.png" }
+                { name: "Store Management System", category: "software", desc: "A robust database-driven application for managing store inventory, sales, and customer data efficiently.", tags: [{n: "Database", c: "blue"}, {n: "SQL", c: "green"}, {n: "Backend", c: "pink"}], link: "https://github.com/Monish21072004/Store_Management.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/store_management_system_a_robu.png" },
+                { name: "Bingo Game", category: "game", desc: "A classic Bingo game brought to life with an interactive and engaging user interface. Fun for all ages!", tags: [{n: "GameDev", c: "blue"}, {n: "JavaScript", c: "green"}, {n: "UI", c: "pink"}], link: "https://github.com/Monish21072004/Bingo-game.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/BingoGame.png" }
             ];
 
             const technologiesData = [
