@@ -39,6 +39,9 @@
             overflow-x: hidden;
             position: relative; /* For the subtle background */
         }
+        body.modal-open {
+            overflow: hidden;
+        }
         body::before {
             content: '';
             position: fixed;
@@ -84,24 +87,27 @@
         .nav-link:hover, .nav-link.active { color: white; }
         .section-wrapper { padding: 5rem 1rem; position: relative; z-index: 1; }
         @media (min-width: 768px) { .section-wrapper { padding: 7rem 2rem; } }
-        .section-head { color: #fff; font-weight: 800; }
+        .section-head { 
+            color: #fff; 
+            font-weight: 800;
+            overflow: hidden;
+        }
+        .section-head .char {
+            transform: translateY(115%);
+            transition: transform .5s;
+        }
         .section-subhead { text-transform: uppercase; letter-spacing: 1px; }
         
         .project-card, .experience-card {
             background: var(--tertiary-bg);
             transition: all 0.3s ease;
             border: 1px solid rgba(145, 94, 255, 0.2);
+            cursor: pointer;
         }
         .project-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 10px 30px rgba(145, 94, 255, 0.2);
         }
-        .github-link {
-            position: absolute; top: 1rem; right: 1rem; background: #111;
-            width: 40px; height: 40px; border-radius: 50%; display: flex;
-            justify-content: center; align-items: center; transition: transform 0.3s;
-        }
-        .github-link:hover { transform: scale(1.15); }
 
         .tag { font-size: 14px; font-weight: bold; }
         .blue-text-gradient { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -128,19 +134,18 @@
         /* GSAP */
         .gsap-reveal { opacity: 0; transform: translateY(40px); }
 
-        /* New Tech Icons Grid Style */
+        /* Tech Icons Grid Style */
         .tech-icon-wrapper {
             position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 112px; /* w-28 */
-            height: 112px; /* h-28 */
+            width: 112px;
+            height: 112px;
             background-color: rgba(255, 255, 255, 0.05);
             border-radius: 50%;
             padding: 1rem;
             transition: transform 0.3s ease, background-color 0.3s ease;
-            cursor: pointer;
         }
         .tech-icon-wrapper:hover {
             transform: scale(1.1);
@@ -165,25 +170,57 @@
             transform: translateY(0);
         }
 
-        /* New Contact Icons Style */
-        .contact-icon-link {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 64px; /* w-16 */
-            height: 64px; /* h-16 */
-            background-color: var(--card-bg);
-            border-radius: 50%;
-            transition: transform 0.3s ease, background-color 0.3s ease;
-        }
+        /* Contact Icons Style */
         .contact-icon-link:hover {
             transform: scale(1.1);
             background-color: var(--primary-accent);
         }
-        .contact-icon-link svg {
-            width: 32px; /* w-8 */
-            height: 32px; /* h-8 */
+
+        /* Project Modal */
+        #project-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        #project-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        #modal-content {
+            background: var(--card-bg);
+            border: 1px solid rgba(145, 94, 255, 0.4);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.4s ease;
+        }
+        #project-modal.active #modal-content {
+            transform: scale(1);
+        }
+        #modal-close-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
             color: white;
+            transition: color 0.3s, transform 0.3s;
+        }
+        #modal-close-btn:hover {
+            color: var(--primary-accent);
+            transform: rotate(90deg);
         }
     </style>
 </head>
@@ -202,14 +239,12 @@
                 <a href="#projects" class="nav-link text-lg font-medium">Projects</a>
                 <a href="#contact" class="nav-link text-lg font-medium">Contact</a>
             </nav>
-            <!-- Mobile Menu Button -->
             <div class="md:hidden flex items-center">
                 <button id="mobile-menu-button" class="text-white focus:outline-none z-30">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
             </div>
         </div>
-        <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 w-full bg-[var(--bg-color)] bg-opacity-95 backdrop-blur-sm">
             <div class="flex flex-col items-center py-4 space-y-4">
                 <a href="#about" class="nav-link mobile-nav-link text-lg font-medium">About</a>
@@ -283,30 +318,42 @@
         
         <section id="contact" class="section-wrapper max-w-7xl mx-auto">
             <div class="gsap-reveal xl:mt-12 flex xl:flex-row flex-col-reverse gap-10 overflow-hidden">
-                <div class="flex-[0.75] bg-[var(--tertiary-bg)] p-8 rounded-2xl">
+                <div class="flex-[0.75] bg-[var(--tertiary-bg)] p-8 rounded-2xl mx-auto text-center">
                     <p class="section-subhead text-lg">Get in touch</p>
                     <h3 class="section-head text-4xl sm:text-5xl lg:text-6xl">Contact.</h3>
-                    <div class="mt-12 flex items-center justify-center gap-10">
-                        <a href="mailto:monishv217@gmail.com" class="contact-icon-link" aria-label="Email Monish">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                            </svg>
+                    <div id="contact-icons" class="mt-12 flex items-center justify-center gap-10">
+                        <a href="mailto:monishv217@gmail.com" class="contact-icon-link bg-[var(--card-bg)] rounded-full p-4" aria-label="Email Monish">
+                            <svg class="w-8 h-8 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
                         </a>
-                        <a href="tel:+919345993268" class="contact-icon-link" aria-label="Call Monish">
-                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.211-.992-.55-1.34L20.07 15.636a2.25 2.25 0 00-3.182 0l-1.97 1.97-1.56-1.56a11.25 11.25 0 01-6.176-6.176l1.56-1.56 1.97-1.97a2.25 2.25 0 000-3.182L6.841 3.9a2.25 2.25 0 00-1.34-.55H4.125A2.25 2.25 0 001.875 5.625v1.125z" />
-                            </svg>
+                        <a href="tel:+919345993268" class="contact-icon-link bg-[var(--card-bg)] rounded-full p-4" aria-label="Call Monish">
+                             <svg class="w-8 h-8 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.211-.992-.55-1.34L20.07 15.636a2.25 2.25 0 00-3.182 0l-1.97 1.97-1.56-1.56a11.25 11.25 0 01-6.176-6.176l1.56-1.56 1.97-1.97a2.25 2.25 0 000-3.182L6.841 3.9a2.25 2.25 0 00-1.34-.55H4.125A2.25 2.25 0 001.875 5.625v1.125z" /></svg>
                         </a>
-                        <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="contact-icon-link" aria-label="Monish's GitHub Profile">
-                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
-                            </svg>
+                        <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="contact-icon-link bg-[var(--card-bg)] rounded-full p-4" aria-label="Monish's GitHub Profile">
+                           <svg class="w-8 h-8 text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
                         </a>
                     </div>
                 </div>
             </div>
         </section>
     </main>
+
+    <!-- Project Modal -->
+    <div id="project-modal">
+        <div id="modal-content">
+            <button id="modal-close-btn">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <img id="modal-image" src="" alt="Project Image" class="w-full h-64 object-cover rounded-t-lg">
+            <div class="p-6 md:p-8">
+                <h3 id="modal-title" class="text-white font-bold text-3xl"></h3>
+                <div id="modal-tags" class="mt-4 flex flex-wrap gap-x-4 gap-y-1"></div>
+                <p id="modal-desc" class="mt-4 text-gray-300 leading-relaxed"></p>
+                <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-block mt-6 bg-[var(--primary-accent)] text-white font-bold py-2 px-6 rounded-md transition-transform hover:scale-105">
+                    View on GitHub
+                </a>
+            </div>
+        </div>
+    </div>
     
     <script type="module">
         import * as THREE from 'three';
@@ -428,8 +475,7 @@
                 window.addEventListener('mousemove', (event) => {
                     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                    customCursor.style.left = `${event.clientX}px`;
-                    customCursor.style.top = `${event.clientY}px`;
+                    customCursor.style.transform = `translate(${event.clientX}px, ${event.clientY}px)`;
                 });
 
                 window.addEventListener('mousedown', () => {
@@ -469,17 +515,12 @@
             ];
 
             const projectsData = [
-                { name: "Medical Image Segmentation", desc: "Utilized GANs for segmenting bone fractures in medical imagery.", tags: [{n: "GANs", c: "blue"}, {n: "AI/ML", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/medical_image_segmentation_usi.png" },
-                { name: "API-Forge: No-Code Backend", desc: "A no-code backend solution simplifying API creation, accelerating development.", tags: [{n: "Backend", c: "blue"}, {n: "Node.js", c: "green"}, {n: "API", c: "pink"}], link: "https://github.com/Monish21072004/API-Forge", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/api_forge__no_code_backend_a_n.png" },
-                { name: "Dragon Proctor: AI Proctoring", desc: "AI proctoring solution with real-time facial detection and gaze tracking.", tags: [{n: "CompVision", c: "blue"}, {n: "AI", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/dragon_proctor", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/dragon_proctor__ai_proctoring_.png" },
-                { name: "AI Reverse Prompt Generator", desc: "An AI tool (Samsung PRISM) that analyzes images to generate text prompts.", tags: [{n: "AI/ML", c: "blue"}, {n: "Python", c: "green"}, {n: "NLP", c: "pink"}], link: "https://github.com/Monish21072004/23GAI32_Reverse_prompt_generator-main", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/ai_reverse_prompt_generator_an.png" },
-                { name: "Smart Attendance System", desc: "Automated attendance system using facial recognition to streamline management.", tags: [{n: "FaceRec", c: "blue"}, {n: "OpenCV", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Smart-Attendance-System", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/smart_attendance_system_automa.png" },
-                { name: "Land Slide Detection", desc: "An AI model to detect and predict land slides from satellite imagery or geographical data.", tags: [{n: "AI/ML", c: "blue"}, {n: "DeepLearning", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Land-Slide-Detection-.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/land_slide_detection_an_ai_mod.png" },
-                { name: "SafeNet Security Suite", desc: "A comprehensive security application focused on providing a secure online experience through various protection modules.", tags: [{n: "Security", c: "blue"}, {n: "Python", c: "green"}, {n: "Networking", c: "pink"}], link: "https://github.com/Monish21072004/SafeNet.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/tray_icon.png" },
-                { name: "Live Higher Studies News", desc: "A web application that aggregates and displays live news and updates related to higher education opportunities and trends.", tags: [{n: "WebApp", c: "blue"}, {n: "NewsAPI", c: "green"}, {n: "Frontend", c: "pink"}], link: "https://github.com/Monish21072004/Live-Higher-Studies-News-.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Higher%20Studies.png" },
-                { name: "DRAGON CHASE Game", desc: "An interactive 2D game developed with a focus on gameplay mechanics and user engagement.", tags: [{n: "GameDev", c: "blue"}, {n: "Python", c: "green"}, {n: "Pygame", c: "pink"}], link: "https://github.com/Monish21072004/DRAGON-CHASE.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Dragon_Chase.png" },
-                { name: "Face Emotion Recognition", desc: "An AI application that detects and classifies human emotions from facial expressions in real-time using computer vision.", tags: [{n: "AI/ML", c: "blue"}, {n: "ComputerVision", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/Face-Emotion-Recognition.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/face_emotion_recognition_an_ai.png" },
-                { name: "Store Management System", desc: "A robust database-driven application for managing store inventory, sales, and customer data efficiently.", tags: [{n: "Database", c: "blue"}, {n: "SQL", c: "green"}, {n: "Backend", c: "pink"}], link: "https://github.com/Monish21072004/Store_Management.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/store_management_system_a_robu.png" }
+                { name: "Medical Image Segmentation", desc: "Utilized Generative Adversarial Networks (GANs) for the complex task of segmenting bone fractures in medical imagery. This project showcases advanced computer vision and deep learning techniques to improve diagnostic accuracy.", tags: [{n: "GANs", c: "blue"}, {n: "AI/ML", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/medical_image_segmentation_usi.png" },
+                { name: "API-Forge: No-Code Backend", desc: "A powerful no-code backend solution that simplifies and accelerates API creation. This tool allows developers to rapidly build, test, and deploy robust APIs without writing extensive backend code.", tags: [{n: "Backend", c: "blue"}, {n: "Node.js", c: "green"}, {n: "API", c: "pink"}], link: "https://github.com/Monish21072004/API-Forge", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/api_forge__no_code_backend_a_n.png" },
+                { name: "Dragon Proctor: AI Proctoring", desc: "An intelligent AI proctoring solution designed for online assessments. It features real-time facial detection, gaze tracking, and anomaly detection to ensure academic integrity.", tags: [{n: "CompVision", c: "blue"}, {n: "AI", c: "green"}, {n: "OpenCV", c: "pink"}], link: "https://github.com/Monish21072004/dragon_proctor", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/dragon_proctor__ai_proctoring_.png" },
+                { name: "AI Reverse Prompt Generator", desc: "A cutting-edge AI tool developed as part of Samsung PRISM. It analyzes images to understand their content and context, automatically generating descriptive text prompts.", tags: [{n: "AI/ML", c: "blue"}, {n: "Python", c: "green"}, {n: "NLP", c: "pink"}], link: "https://github.com/Monish21072004/23GAI32_Reverse_prompt_generator-main", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/ai_reverse_prompt_generator_an.png" },
+                { name: "Smart Attendance System", desc: "An automated attendance system that leverages facial recognition technology. This project streamlines the attendance process, making it faster, more accurate, and entirely contactless.", tags: [{n: "FaceRec", c: "blue"}, {n: "OpenCV", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Smart-Attendance-System", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/smart_attendance_system_automa.png" },
+                { name: "Land Slide Detection", desc: "A predictive AI model trained to detect and forecast potential landslides by analyzing satellite imagery and geographical data. This tool has applications in disaster management and prevention.", tags: [{n: "AI/ML", c: "blue"}, {n: "DeepLearning", c: "green"}, {n: "Python", c: "pink"}], link: "https://github.com/Monish21072004/Land-Slide-Detection-.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/land_slide_detection_an_ai_mod.png" }
             ];
 
             const technologiesData = [
@@ -518,16 +559,17 @@
             });
 
             const projectsContainer = document.getElementById('projects-container');
-            projectsData.forEach(p => {
+            projectsData.forEach((p, index) => {
                 const card = document.createElement('div');
                 card.className = 'project-card p-5 rounded-2xl w-full gsap-reveal';
+                card.dataset.index = index;
                 card.innerHTML = `
                     <div class="relative w-full h-[230px]">
                         <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-2xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/151030/aaa6c3?text=Image+Not+Found';" />
-                        <a href="${p.link}" target="_blank" class="github-link"><img src="https://raw.githubusercontent.com/adrianhajdin/project_3D_developer_portfolio/main/src/assets/github.png" class="w-1/2 h-1/2" /></a>
                     </div>
-                    <div class="mt-5"><h3 class="text-white font-bold text-2xl">${p.name}</h3><p class="mt-2 text-sm">${p.desc}</p></div>
-                    <div class="mt-4 flex gap-2">${p.tags.map(t => `<p class="tag ${t.c}-text-gradient">#${t.n}</p>`).join('')}</div>`;
+                    <div class="mt-5"><h3 class="text-white font-bold text-2xl">${p.name}</h3><p class="mt-2 text-sm text-gray-400">${p.desc.substring(0, 100)}...</p></div>
+                    <div class="mt-4 flex gap-2">${p.tags.map(t => `<p class="tag ${t.c}-text-gradient">#${t.n}</p>`).join('')}</div>
+                `;
                 projectsContainer.appendChild(card);
             });
 
@@ -541,11 +583,81 @@
                 `;
                 techContainer.appendChild(wrapper);
             });
+
+             // --- MODAL LOGIC ---
+            const modal = document.getElementById('project-modal');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
             
-            // --- GSAP ANIMATIONS ---
+            projectsContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.project-card');
+                if (card) {
+                    const project = projectsData[card.dataset.index];
+                    document.getElementById('modal-image').src = project.image;
+                    document.getElementById('modal-title').innerText = project.name;
+                    document.getElementById('modal-desc').innerText = project.desc;
+                    document.getElementById('modal-link').href = project.link;
+                    const tagsContainer = document.getElementById('modal-tags');
+                    tagsContainer.innerHTML = project.tags.map(t => `<p class="tag ${t.c}-text-gradient bg-black bg-opacity-20 px-2 py-1 rounded-md">#${t.n}</p>`).join('');
+                    modal.classList.add('active');
+                    document.body.classList.add('modal-open');
+                }
+            });
+
+            const closeModal = () => {
+                 modal.classList.remove('active');
+                 document.body.classList.remove('modal-open');
+            }
+            modalCloseBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+            
+            // --- GSAP REVEAL ANIMATIONS ---
             gsap.utils.toArray('.gsap-reveal').forEach(el => {
-                gsap.fromTo(el, {y: 50, autoAlpha: 0}, { y: 0, autoAlpha: 1, duration: 1, ease: "power3.out",
+                gsap.fromTo(el, {y: 50, autoAlpha: 0}, { 
+                    y: 0, 
+                    autoAlpha: 1, 
+                    duration: 1.2, 
+                    ease: "power3.out",
                     scrollTrigger: { trigger: el, start: "top 90%" }
+                });
+            });
+
+            // Animate heading characters
+            document.querySelectorAll('.section-head').forEach(heading => {
+                const text = heading.textContent;
+                heading.innerHTML = '';
+                text.split('').forEach(char => {
+                    const span = document.createElement('span');
+                    span.className = 'char inline-block';
+                    span.textContent = char === ' ' ? '\u00A0' : char;
+                    heading.appendChild(span);
+                });
+                
+                gsap.to(heading.querySelectorAll('.char'), {
+                    y: 0,
+                    stagger: 0.05,
+                    delay: 0.2,
+                    duration: .1,
+                    scrollTrigger: {
+                        trigger: heading,
+                        start: 'top 90%',
+                    }
+                });
+            });
+
+            // Magnetic Contact Icons
+            const contactIcons = document.querySelectorAll('.contact-icon-link');
+            contactIcons.forEach(icon => {
+                const moveMagnet = (event) => {
+                    const rect = icon.getBoundingClientRect();
+                    const x = event.clientX - (rect.left + rect.width / 2);
+                    const y = event.clientY - (rect.top + rect.height / 2);
+                    gsap.to(icon, { x: x * 0.3, y: y * 0.3, duration: 0.7, ease: "power4.out" });
+                }
+                icon.addEventListener('mousemove', moveMagnet);
+                icon.addEventListener('mouseleave', () => {
+                    gsap.to(icon, { x: 0, y: 0, duration: 0.7, ease: "elastic.out(1, 0.3)" });
                 });
             });
 
@@ -555,4 +667,5 @@
     </script>
 </body>
 </html>
+
 
