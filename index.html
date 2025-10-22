@@ -24,6 +24,356 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!--
+    ================================================================
+    GLSL SHADER DEFINITIONS
+    ================================================================
+    -->
+
+    <!-- Noise Function (used by all shaders) -->
+    <script type="text/plain" id="glsl-noise">
+        /*
+         * Classic Perlin noise 3D (GLSL)
+         * Author: Stefan Gustavson
+         * Optimised Ashima Arts noise code.
+         */
+        
+            vec3 mod289(vec3 x) {
+                return x - floor(x * (1.0 / 289.0)) * 289.0;
+            }
+
+            vec4 mod289(vec4 x) {
+                return x - floor(x * (1.0 / 289.0)) * 289.0;
+            }
+
+            vec4 permute(vec4 x) {
+                return mod289(((x*34.0)+1.0)*x);
+            }
+
+            vec4 taylorInvSqrt(vec4 r) {
+                return 1.79284291400159 - 0.85373472095314 * r;
+            }
+
+            float snoise(vec3 v) {
+                const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+                const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+
+                // First corner
+                vec3 i  = floor(v + dot(v, C.yyy) );
+                vec3 x0 =   v - i + dot(i, C.xxx) ;
+
+                // Other corners
+                vec3 g = step(x0.yzx, x0.xyz);
+                vec3 l = 1.0 - g;
+                vec3 i1 = min( g.xyz, l.zxy );
+                vec3 i2 = max( g.xyz, l.zxy );
+
+                vec3 x1 = x0 - i1 + C.xxx;
+                vec3 x2 = x0 - i2 + C.yyy; // 1.0/6.0 = 0.166666...
+                vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.xxx = -0.5
+
+                // Permutations
+                i = mod289(i);
+                vec4 p = permute( permute( permute(
+                            i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                        + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+                        + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+
+                // Gradients: 7x7 points over a square, mapped onto an octahedron.
+                // The ring size 17*17 = 289 is close to 1/sf (~256)
+                float n_ = 0.142857142857; // 1.0/7.0
+                vec3  ns = n_ * D.wyz - D.xzx;
+
+                vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)
+
+                vec4 x_ = floor(j * ns.z);
+                vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)
+
+                vec4 x = x_ *ns.x + ns.yyyy;
+                vec4 y = y_ *ns.x + ns.yyyy;
+                vec4 h = 1.0 - abs(x) - abs(y);
+
+                vec4 b0 = vec4( x.xy, y.xy );
+                vec4 b1 = vec4( x.zw, y.zw );
+
+                vec4 s0 = floor(b0)*2.0 + 1.0;
+                vec4 s1 = floor(b1)*2.0 + 1.0;
+                vec4 sh = -step(h, vec4(0.0));
+
+                vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+                vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+
+                vec3 p0 = vec3(a0.xy,h.x);
+                vec3 p1 = vec3(a0.zw,h.y);
+                vec3 p2 = vec3(a1.xy,h.z);
+                vec3 p3 = vec3(a1.zw,h.w);
+
+                //Normalise gradients
+                vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+                p0 *= norm.x;
+                p1 *= norm.y;
+                p2 *= norm.z;
+                p3 *= norm.w;
+
+                // Mix final noise value
+                vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+                m = m * m;
+                return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+                                                dot(p2,x2), dot(p3,x3) ) );
+            }
+    </script>
+    
+    <!-- NEW Sun Core Shader -->
+    <script type="x-shader/x-vertex" id="coreVertexShader">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        void main() {
+            vUv = uv;
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="coreFragmentShader">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        uniform float uTime;
+
+        // Noise code will be injected by JS
+
+        float fresnel(float bias, float scale, float power) {
+            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
+        }
+
+        void main() {
+            // Turbulent noise for the sun's surface
+            float noise = snoise(vec3(vUv * 3.0, uTime * 0.2)); // Slower, larger blobs
+            noise += snoise(vec3(vUv * 10.0, uTime * 0.5)) * 0.5; // Faster, smaller details
+            noise = (noise + 1.0) * 0.5; // map to 0-1
+
+            // Define sun colors
+            vec3 colorRed = vec3(1.0, 0.1, 0.0);
+            vec3 colorOrange = vec3(1.0, 0.5, 0.0);
+            vec3 colorYellow = vec3(1.0, 0.9, 0.0);
+
+            // Mix colors based on noise
+            vec3 color = mix(colorRed, colorOrange, smoothstep(0.2, 0.5, noise));
+            color = mix(color, colorYellow, smoothstep(0.5, 0.7, noise));
+
+            // Add a glowing atmosphere with fresnel
+            float atmosphere = fresnel(0.1, 0.9, 7.0);
+            color += colorYellow * atmosphere * 0.8; // Bright yellow glow at the edges
+
+            // Add bright hot spots
+            float hotspots = snoise(vec3(vUv * 5.0, uTime * 0.3));
+            hotspots = smoothstep(0.8, 0.85, hotspots);
+            color += vec3(1.0, 1.0, 0.5) * hotspots * 0.5;
+
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <!-- Planet Shaders -->
+    <script type="x-shader/x-vertex" id="planetVertexShader">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        void main() {
+            vUv = uv;
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+
+    <!-- Terrestrial Planet (About, Philosophy) -->
+    <script type="x-shader/x-fragment" id="terrestrialFragmentShader">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        uniform float uTime;
+        uniform float uShine;
+
+        // Noise code will be injected by JS
+
+        float fresnel(float bias, float scale, float power) {
+            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
+        }
+
+        void main() {
+            // Base land/water
+            float noise = snoise(vec3(vUv * 5.0, uTime * 0.05));
+            float land = smoothstep(0.45, 0.5, noise);
+            vec3 landColor = vec3(0.2, 0.5, 0.1);
+            vec3 waterColor = vec3(0.1, 0.3, 0.6);
+            vec3 color = mix(waterColor, landColor, land);
+
+            // Clouds
+            float cloudNoise = snoise(vec3(vUv * 3.0, uTime * 0.15));
+            float clouds = smoothstep(0.5, 0.7, cloudNoise);
+            color = mix(color, vec3(1.0), clouds * 0.5);
+
+            // Atmosphere
+            float atmosphere = fresnel(0.1, 0.9, 5.0);
+            color += vec3(0.3, 0.5, 0.8) * atmosphere;
+
+            // Shine effect
+            color += vec3(1.0) * uShine * (0.5 + atmosphere * 0.5);
+
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+    
+    <!-- Gas Giant Planet (Tech, Projects) -->
+    <script type="x-shader/x-fragment" id="gasGiantFragmentShader">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        uniform float uTime;
+        uniform float uShine;
+
+        // Noise code will be injected by JS
+
+        float fresnel(float bias, float scale, float power) {
+            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
+        }
+
+        void main() {
+            // Swirling bands
+            float noise = snoise(vec3(vUv.y * 10.0, vUv.x * 2.0 + uTime * 0.2, uTime * 0.1));
+            noise = (noise + 1.0) * 0.5; // Map to 0-1
+            
+            vec3 color1 = vec3(0.8, 0.5, 0.2);
+            vec3 color2 = vec3(0.6, 0.3, 0.1);
+            vec3 color3 = vec3(0.9, 0.8, 0.7);
+            
+            vec3 color = mix(color1, color2, smoothstep(0.4, 0.6, noise));
+            color = mix(color, color3, smoothstep(0.7, 0.8, noise));
+
+            // Atmosphere
+            float atmosphere = fresnel(0.1, 0.9, 5.0);
+            color += vec3(0.8, 0.6, 0.4) * atmosphere;
+
+            // Shine effect
+            color += vec3(1.0) * uShine * (0.5 + atmosphere * 0.5);
+
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+    
+    <!-- Rocky Planet (GitHub) -->
+    <script type="x-shader/x-fragment" id="rockyFragmentShader">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        uniform float uTime;
+        uniform float uShine;
+
+        // Noise code will be injected by JS
+
+        float fresnel(float bias, float scale, float power) {
+            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
+        }
+
+        float rand(vec2 n) { 
+            return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+        }
+
+        float crater(vec2 uv, vec2 pos, float radius) {
+            float d = distance(uv, pos);
+            float rim = smoothstep(radius, radius + 0.02, d);
+            float inside = 1.0 - smoothstep(radius - 0.05, radius, d);
+            return (1.0 - rim) * inside;
+        }
+
+        void main() {
+            // Base rock texture
+            float noise = snoise(vec3(vUv * 15.0, uTime * 0.01));
+            vec3 color = vec3(0.5) + noise * 0.2;
+
+            // Craters
+            float craters = 0.0;
+            for(int i=0; i < 5; i++) {
+                float fi = float(i);
+                vec2 pos = vec2(rand(vec2(fi)), rand(vec2(fi*2.0)));
+                float radius = rand(vec2(fi*3.0)) * 0.1 + 0.05;
+                craters += crater(vUv, pos, radius);
+            }
+            color -= craters * 0.3;
+
+            // Atmosphere (dust)
+            float atmosphere = fresnel(0.05, 0.9, 7.0);
+            color += vec3(0.6, 0.5, 0.4) * atmosphere;
+
+            // Shine effect
+            color += vec3(1.0) * uShine * (0.5 + atmosphere * 0.5);
+
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <!-- NEW Lava Planet Shader (GitHub) -->
+    <script type="x-shader/x-fragment" id="lavaFragmentShader">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        uniform float uTime;
+        uniform float uShine;
+
+        // Noise code will be injected by JS
+
+        float fresnel(float bias, float scale, float power) {
+            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
+        }
+
+        void main() {
+            // Base rock texture
+            float rockNoise = snoise(vec3(vUv * 10.0, uTime * 0.02));
+            vec3 color = vec3(0.1, 0.05, 0.05) + rockNoise * 0.1;
+
+            // Fiery cracks
+            float crackNoise = snoise(vec3(vUv * 5.0, uTime * 0.1));
+            float cracks = smoothstep(0.6, 0.65, crackNoise);
+            cracks *= (1.0 - smoothstep(0.65, 0.8, crackNoise)); // Rim
+            
+            vec3 lavaColor = vec3(1.0, 0.3, 0.0) * (1.0 + (sin(uTime * 5.0 + vUv.x * 10.0) * 0.5 + 0.5));
+            color = mix(color, lavaColor, cracks * (0.5 + uShine * 0.5)); // Cracks glow on shine
+
+            // Atmosphere (heat haze)
+            float atmosphere = fresnel(0.1, 0.9, 5.0);
+            color += vec3(0.8, 0.2, 0.0) * atmosphere * 0.5;
+
+            // Shine effect
+            color += vec3(1.0, 0.5, 0.0) * uShine * 0.5;
+
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+    
+    <!-- Planet Ring Shader (Contact) -->
+    <script type="x-shader/x-fragment" id="ringFragmentShader">
+        varying vec2 vUv;
+        uniform float uTime;
+
+        // Noise code will be injected by JS
+
+        void main() {
+            // vUv.x is the radial coordinate (0 at center, 1 at edge)
+            float radial = vUv.x;
+            float angle = vUv.y * 3.14159 * 2.0;
+
+            // Create ring patterns using noise
+            float noise = snoise(vec3(radial * 20.0, angle * 10.0, uTime * 0.1));
+            noise = smoothstep(0.3, 0.7, noise);
+
+            // Fade in/out at edges
+            float opacity = (1.0 - noise) * 0.7;
+            opacity *= smoothstep(0.0, 0.1, radial); // Fade in from center
+            opacity *= (1.0 - smoothstep(0.9, 1.0, radial)); // Fade out at edge
+            
+            gl_FragColor = vec4(0.8, 0.75, 0.7, opacity * 0.5);
+        }
+    </script>
+
+    <!--
+    ================================================================
+    END GLSL SHADERS
+    ================================================================
+    -->
+
     <style>
         :root {
             --bg-color: #101010;
@@ -43,9 +393,22 @@
         }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--bg-color); /* Fallback color */
+            /* Background GIF */
+            background-image: url('https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Space.gif');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
             color: var(--secondary-text);
-            position: relative;
+            position: relative; /* Needed for the overlay */
+        }
+        /* Background GIF Overlay */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.75); /* Adjust opacity (0.75 = 75% black) */
+            z-index: -1; /* Place behind content, but above background-image */
         }
         body.loading {
             overflow: hidden;
@@ -58,9 +421,12 @@
             width: 100%;
             height: 100%;
             cursor: none;
+            background: transparent; /* Make canvas transparent */
+            z-index: 1; /* Ensure canvas is above the body pseudo-element */
         }
         
-        .custom-cursor {
+        /* RESTORED: Original Gold Circle Cursor */
+        #custom-cursor {
             position: fixed; top: 0; left: 0;
             width: 10px; height: 10px;
             background-color: var(--primary-accent);
@@ -68,12 +434,21 @@
             pointer-events: none; z-index: 9999;
             box-shadow: 0 0 15px var(--primary-accent), 0 0 25px var(--primary-accent);
             opacity: 0;
-            transition: opacity 0.3s, transform 0.1s ease-out;
-            transform: translate(-50%, -50%);
+            transition: opacity 0.3s, transform 0.1s ease-out; /* Removed linear */
+            transform: translate(-50%, -50%); /* Removed rotation */
         }
-        .custom-cursor.clicked {
+        #custom-cursor.clicked {
             transform: translate(-50%, -50%) scale(0.8);
         }
+        
+        /* Custom cursor state for 3D hover - Make circle an outline */
+        #custom-cursor.hover-3d {
+            transform: translate(-50%, -50%) scale(2.5);
+            background-color: transparent;
+            border: 2px solid var(--primary-accent);
+            box-shadow: 0 0 15px var(--primary-accent); /* Adjusted shadow */
+        }
+
 
         .header {
             position: fixed;
@@ -175,7 +550,7 @@
         .timeline-container.right { left: 50%; }
         .timeline-container::after { content: ''; position: absolute; width: 18px; height: 18px; right: -9px; background-color: var(--bg-color); border: 2px solid var(--primary-accent); top: 25px; border-radius: 50%; z-index: 1; }
         .timeline-container.right::after { left: -9px; }
-        .timeline-content { padding: 20px 30px; background: var(--tertiary-bg); position: relative; border-radius: 8px; border: 1px solid var(--border-color); }
+        .timeline-content { padding: 20px 30px; background: var(--card-bg); /* Updated background */ position: relative; border-radius: 8px; border: 1px solid var(--border-color); }
 
         @media screen and (max-width: 768px) {
             .timeline::after { left: 31px; }
@@ -274,7 +649,10 @@
 <body class="relative loading">
 
     <div id="preloader"><div class="loader-orb"></div></div>
-    <div id="custom-cursor" class="custom-cursor"></div>
+    
+    <!-- RESTORED: Original Gold Circle Cursor Div -->
+    <div id="custom-cursor"></div> 
+
     <button id="mute-btn">
         <svg id="sound-on-icon" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707a1 1 0 011.414 0v14a1 1 0 01-1.414 0L5.586 15z"></path></svg>
         <svg id="sound-off-icon" class="w-6 h-6 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707a1 1 0 011.414 0v14a1 1 0 01-1.414 0L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
@@ -381,6 +759,12 @@
                     <p class="text-secondary-text mt-2">Total Stars</p>
                 </div>
             </div>
+            <!-- NEW: GitHub Profile Link -->
+            <div class="mt-12 text-center gsap-reveal">
+                <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="inline-block bg-transparent border border-[var(--primary-accent)] text-[var(--primary-accent)] font-bold py-3 px-8 rounded-full text-lg transition-all hover:scale-105 hover:bg-[var(--primary-accent)] hover:text-black">
+                    View My GitHub Profile
+                </a>
+            </div>
         </div>
         <button class="modal-close-btn content-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
@@ -484,27 +868,92 @@
             let soundsReady = false;
             let isMuted = true;
             let mainScene, mainCamera, mainRenderer, raycaster, controls;
-            const navNodes = [];
-            const homePosition = new THREE.Vector3(0, 0, 20);
-
-            // --- IMPROVED SOUND DESIGN ---
-            const hoverSound = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.1 } }).toDestination();
-            hoverSound.volume.value = -15;
-            const clickSound = new Tone.FMSynth({ modulationIndex: 10, envelope: { attack: 0.001, decay: 0.2 }, modulationEnvelope: { attack: 0.001, decay: 0.1 } }).toDestination();
-            clickSound.volume.value = -10;
+            let hoveredNode = null;
+            const navNodes = []; // Will store the planet groups
+            const homePosition = new THREE.Vector3(0, 5, 25); // Raised camera angle
+            const accentColor = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--primary-accent'));
+            let coreGroup, sunCore, wireframeCore; // To hold the AI core components
+            let coreBeat = { intensity: 1.0 }; // Start intensity at 1.0 for scaling
+            let lastMousePos = { x: 0, y: 0 }; // For cursor rotation - REMOVED angle logic here
+           
+            // --- IMPROVED SOUND DESIGN (Space Theme) ---
+            const reverb = new Tone.Freeverb({
+                roomSize: 0.7,
+                dampening: 4000
+            }).toDestination();
             
-            function playHover() { if (!isMuted) hoverSound.triggerAttackRelease("G5", "32n"); }
-            function playClick() { if (!isMuted) clickSound.triggerAttackRelease("C4", "16n"); }
+            const hoverSound = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.1 } }).connect(reverb);
+            hoverSound.volume.value = -20; 
+            
+            const clickSound = new Tone.FMSynth({
+                 modulationIndex: 10,
+                 envelope: { attack: 0.001, decay: 0.05 }, 
+                 modulationEnvelope: { attack: 0.001, decay: 0.02 } 
+            }).toDestination();
+            clickSound.volume.value = -15; 
+
+            const heartbeatSound = new Tone.MembraneSynth({
+                 pitchDecay: 0.01, 
+                 octaves: 2,       
+                 oscillator: { type: 'sine' },
+                 envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 }
+            }).toDestination();
+            heartbeatSound.volume.value = -18; // Keep it subtle
+            
+            function playHover() { if (!isMuted) hoverSound.triggerAttackRelease("C6", "32n"); } 
+            
+            function playClick() { 
+                if (!isMuted) {
+                    // Check if Tone.context is running, resume if needed (safer approach)
+                    if (Tone.context.state !== 'running') {
+                         Tone.context.resume();
+                    }
+                    clickSound.triggerAttackRelease("C4", "32n", Tone.now()); 
+                }
+            } 
+            
+            // --- Heartbeat Function ---
+            function triggerHeartbeat() {
+                // FIX: Check if Tone has started and is not muted
+                if (soundsReady && !isMuted) {
+                     // Ensure context is running before scheduling
+                    if (Tone.context.state !== 'running') {
+                        Tone.context.resume().then(() => {
+                           const now = Tone.now();
+                           heartbeatSound.triggerAttackRelease('C1', '8n', now); // "lub"
+                           heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); // "DUB" - Increased delay slightly
+                        });
+                    } else {
+                         const now = Tone.now();
+                         heartbeatSound.triggerAttackRelease('C1', '8n', now); // "lub"
+                         heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); // "DUB" - Increased delay slightly
+                    }
+                }
+
+                gsap.timeline()
+                    // Adjusted intensity values slightly for the new base scale
+                    .to(coreBeat, { intensity: 1.15, duration: 0.1, ease: 'power2.out' }) // lub
+                    .to(coreBeat, { intensity: 1.0, duration: 0.1, ease: 'power2.in' }) 
+                    .to(coreBeat, { intensity: 1.25, duration: 0.1, delay: 0.05, ease: 'power2.out' }) // DUB
+                    .to(coreBeat, { intensity: 1.0, duration: 0.4, ease: 'power2.in' }); // Back to base
+
+                const nextDelay = 3000 + Math.random() * 1000; 
+                setTimeout(triggerHeartbeat, nextDelay);
+            }
 
             // --- PRELOADER ---
             window.addEventListener('load', () => {
                 gsap.to('#preloader', { opacity: 0, duration: 0.8, onComplete: () => {
                     document.getElementById('preloader').style.display = 'none';
                     document.body.classList.remove('loading');
+                    // SoundsReady will be set on first interaction, delay heartbeat start
+                    setTimeout(triggerHeartbeat, 500); 
                 }});
             });
 
             function initMainScene() {
+                const noiseCode = document.getElementById('glsl-noise').textContent; 
+
                 mainScene = new THREE.Scene();
                 mainCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
                 mainCamera.position.copy(homePosition);
@@ -513,22 +962,23 @@
                 mainRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
                 mainRenderer.setSize(window.innerWidth, window.innerHeight);
                 mainRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                mainRenderer.setClearColor(0x000000, 0); // Make renderer transparent
 
                 raycaster = new THREE.Raycaster();
+                raycaster.near = 0.1;
+                raycaster.far = 50;
                 
                 controls = new OrbitControls(mainCamera, mainRenderer.domElement);
-                controls.enabled = false; // We'll control this manually
+                controls.enabled = false; 
                 controls.enableDamping = true;
                 controls.dampingFactor = 0.05;
                 controls.target.set(0, 0, 0);
 
-                // Lights
-                mainScene.add(new THREE.AmbientLight(0xffffff, 0.2));
-                const pointLight = new THREE.PointLight(0xffffff, 0.8);
-                pointLight.position.set(5, 5, 15);
+                mainScene.add(new THREE.AmbientLight(0xffffff, 0.3)); 
+                const pointLight = new THREE.PointLight(0xffffff, 1.0); 
+                pointLight.position.set(0, 0, 0);
                 mainScene.add(pointLight);
 
-                // Starfield
                 const starGeometry = new THREE.BufferGeometry();
                 const starVertices = [];
                 for (let i = 0; i < 10000; i++) {
@@ -542,62 +992,113 @@
                 const stars = new THREE.Points(starGeometry, starMaterial);
                 mainScene.add(stars);
 
-                // --- Holographic AI Core ---
-                const coreGroup = new THREE.Group();
-                coreGroup.position.set(0, 0, 0); // Center of the universe
+                coreGroup = new THREE.Group();
+                coreGroup.position.set(0, 0, 0); 
                 mainScene.add(coreGroup);
 
-                const accentColor = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--primary-accent'));
-                const coreGeom = new THREE.IcosahedronGeometry(1.5, 5);
-                const coreMat = new THREE.MeshBasicMaterial({ color: accentColor, wireframe: true });
-                const core = new THREE.Mesh(coreGeom, coreMat);
-                coreGroup.add(core);
+                // Shared geometry for core elements
+                const coreGeom = new THREE.IcosahedronGeometry(2.2, 5); // Base size for wireframe
+                
+                // Fiery Sun Core (Inner)
+                const coreMat = new THREE.ShaderMaterial({
+                    vertexShader: document.getElementById('coreVertexShader').textContent,
+                    fragmentShader: noiseCode + document.getElementById('coreFragmentShader').textContent,
+                    uniforms: {
+                        uTime: { value: 0 }
+                    }
+                });
+                sunCore = new THREE.Mesh(coreGeom, coreMat); // Uses base geometry, will be scaled down
+                coreGroup.add(sunCore);
 
-                const ringGeom = new THREE.TorusGeometry(2.8, 0.03, 16, 100);
-                const ringMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8, opacity: 0.8, transparent: true });
+                // Wireframe Shell (Outer)
+                const wireframeMat = new THREE.MeshBasicMaterial({ color: accentColor, wireframe: true, transparent: true, opacity: 0.8 });
+                wireframeCore = new THREE.Mesh(coreGeom, wireframeMat); // Uses base geometry, scaled normally
+                coreGroup.add(wireframeCore);
+
+
+                const ringGeom = new THREE.TorusGeometry(3.5, 0.03, 16, 100); 
+                const ringMat = new THREE.MeshBasicMaterial({ color: accentColor, opacity: 0.8, transparent: true }); 
                 const ring1 = new THREE.Mesh(ringGeom, ringMat);
                 ring1.rotation.x = Math.PI / 2;
                 const ring2 = ring1.clone();
                 ring2.rotation.y = Math.PI / 2;
                 coreGroup.add(ring1, ring2);
 
-                const particlesGeom = new THREE.SphereGeometry(3.5, 32, 32);
-                const particlesMat = new THREE.PointsMaterial({ color: accentColor, size: 0.015, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.5 });
+                const particlesGeom = new THREE.SphereGeometry(4.2, 32, 32); 
+                const particlesMat = new THREE.PointsMaterial({ 
+                    color: 0xffa500, 
+                    size: 0.02, 
+                    blending: THREE.AdditiveBlending, 
+                    transparent: true, 
+                    opacity: 0.7 
+                });
                 const particles = new THREE.Points(particlesGeom, particlesMat);
                 coreGroup.add(particles);
 
-                // --- Navigation Nodes ---
-                const nodeGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-                const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.3 });
+                const planetGeometry = new THREE.SphereGeometry(0.8, 32, 32); 
                 
                 const navItems = [
-                    { id: 'about', pos: new THREE.Vector3(-10, 5, 0), label: 'About' },
-                    { id: 'philosophy', pos: new THREE.Vector3(-15, 0, 0), label: 'Philosophy' },
-                    { id: 'experience', pos: new THREE.Vector3(-10, -5, 0), label: 'Experience' },
-                    { id: 'github-stats', pos: new THREE.Vector3(0, -12, 0), label: 'GitHub' },
-                    { id: 'tech', pos: new THREE.Vector3(10, -5, 0), label: 'Tech' },
-                    { id: 'projects', pos: new THREE.Vector3(15, 0, 0), label: 'Projects' },
-                    { id: 'contact', pos: new THREE.Vector3(10, 5, 0), label: 'Contact' }
+                    { id: 'about', label: 'About', radius: 6, speed: 0.12, inclination: 0.1, eccentricity: 0.02, shader: 'terrestrialFragmentShader' },
+                    { id: 'philosophy', label: 'Philosophy', radius: 8, speed: 0.1, inclination: -0.05, eccentricity: 0.05, shader: 'rockyFragmentShader' },
+                    { id: 'tech', label: 'Tech', radius: 14, speed: 0.06, inclination: -0.1, eccentricity: 0.03, shader: 'gasGiantFragmentShader' },
+                    { id: 'projects', label: 'Projects', radius: 17, speed: 0.05, inclination: 0.05, eccentricity: 0.06, shader: 'gasGiantFragmentShader' },
+                    { id: 'github-stats', label: 'GitHub', radius: 11, speed: 0.08, inclination: 0.15, eccentricity: 0.08, shader: 'lavaFragmentShader' },
+                    { id: 'contact', label: 'Contact', radius: 20, speed: 0.04, inclination: 0.0, eccentricity: 0.01, shader: 'terrestrialFragmentShader' } 
                 ];
                 
                 const fontLoader = new FontLoader();
                 fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
-                    const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                    navItems.forEach(item => {
-                        const node = new THREE.Mesh(nodeGeometry, nodeMaterial.clone());
-                        node.position.copy(item.pos);
-                        node.name = item.id;
+                    const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+
+                    navItems.forEach((item, i) => {
+                        const nodeGroup = new THREE.Group();
+                        nodeGroup.name = item.id;
+                        nodeGroup.userData = item; 
+                        
+                        const planetMaterial = new THREE.ShaderMaterial({
+                            vertexShader: document.getElementById('planetVertexShader').textContent,
+                            fragmentShader: noiseCode + document.getElementById(item.shader).textContent,
+                            uniforms: {
+                                uTime: { value: 0 },
+                                uShine: { value: 0.0 }
+                            }
+                        });
+                        
+                        const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+                        planetMesh.name = item.id; 
+                        nodeGroup.add(planetMesh);
+
+                        if (item.id === 'contact') {
+                            const ringGeom = new THREE.RingGeometry(1.2, 1.8, 64);
+                            const ringMaterial = new THREE.ShaderMaterial({
+                                vertexShader: document.getElementById('planetVertexShader').textContent, 
+                                fragmentShader: noiseCode + document.getElementById('ringFragmentShader').textContent,
+                                uniforms: {
+                                    uTime: { value: 0 }
+                                },
+                                transparent: true,
+                                side: THREE.DoubleSide
+                            });
+                            const ringMesh = new THREE.Mesh(ringGeom, ringMaterial);
+                            ringMesh.rotation.x = Math.PI * 0.4; 
+                            nodeGroup.add(ringMesh);
+                        }
                         
                         const textGeom = new TextGeometry(item.label, {
-                            font: font, size: 0.5, height: 0.1,
+                            font: font, size: 0.4, height: 0.05,
                         });
                         textGeom.center();
-                        const textMesh = new THREE.Mesh(textGeom, textMaterial);
-                        textMesh.position.y = 1; // Position text above node
-                        node.add(textMesh);
+                        const textMesh = new THREE.Mesh(textGeom, textMaterial.clone());
+                        textMesh.position.y = 1.3; 
+                        textMesh.name = "text";
+                        nodeGroup.add(textMesh);
                         
-                        mainScene.add(node);
-                        navNodes.push(node);
+                        const angle = i * (Math.PI * 2 / navItems.length);
+                        nodeGroup.position.x = Math.cos(angle) * item.radius;
+                        nodeGroup.position.z = Math.sin(angle) * item.radius;
+
+                        mainScene.add(nodeGroup);
+                        navNodes.push(nodeGroup);
                     });
                 });
 
@@ -605,42 +1106,87 @@
                     requestAnimationFrame(animate);
                     const elapsedTime = clock.getElapsedTime();
                     
-                    // Asymmetric heartbeat
-                    const beat = Math.pow(Math.sin(elapsedTime * 3.0) * 0.5 + 0.5, 2.0);
-                    const rest = THREE.MathUtils.smoothstep((elapsedTime * 0.5) % 1.0, 0.0, 0.2); // FIX: JS equivalent of fract()
-                    core.scale.setScalar(0.95 + (beat * (1.0-rest)) * 0.1);
+                    // --- AI Core Heartbeat Scaling ---
+                    if (sunCore && wireframeCore) { 
+                        // Scale sunCore to 3/4 of the wireframeCore's current intensity
+                        sunCore.scale.setScalar(coreBeat.intensity * 0.75); 
+                        // Scale wireframeCore normally
+                        wireframeCore.scale.setScalar(coreBeat.intensity * 1.0); 
+                        sunCore.material.uniforms.uTime.value = elapsedTime * 0.5; 
+                    }
 
                     ring1.rotation.z = elapsedTime * 0.2;
                     ring2.rotation.z = elapsedTime * 0.2;
                     particles.rotation.y = -elapsedTime * 0.05;
                     coreGroup.rotation.y = elapsedTime * 0.1;
                     
-                    // Orbiting nodes
-                    navNodes.forEach((node, i) => {
-                        const angle = elapsedTime * 0.1 + (i * (Math.PI * 2 / navNodes.length));
-                        const dist = node.position.length();
-                        if (i % 2 === 0) { // Some orbit on XY plane
-                             node.position.x = Math.cos(angle) * dist;
-                             node.position.y = Math.sin(angle) * dist;
-                        } else { // Others orbit on XZ plane
-                            node.position.x = Math.cos(angle) * dist;
-                            node.position.z = Math.sin(angle) * dist;
+                    navNodes.forEach((node) => {
+                        const data = node.userData;
+                        const angle = elapsedTime * data.speed;
+                        const eccentricity = data.eccentricity; 
+                        
+                        const r = data.radius * (1 - eccentricity * eccentricity) / (1 + eccentricity * Math.cos(angle));
+
+                        node.position.x = Math.cos(angle) * r;
+                        node.position.y = Math.sin(angle) * r * Math.sin(data.inclination);
+                        node.position.z = Math.sin(angle) * r * Math.cos(data.inclination);
+
+                        node.children[0].material.uniforms.uTime.value = elapsedTime;
+                        node.children[0].rotation.y += 0.005;
+
+                        if(data.id === 'contact' && node.children[1]) {
+                            node.children[1].material.uniforms.uTime.value = elapsedTime;
+                        }
+
+                        if (node.children.length > 1) {
+                            const textMesh = node.getObjectByName("text");
+                            if (textMesh) {
+                                textMesh.quaternion.copy(mainCamera.quaternion);
+                            }
                         }
                     });
 
-                    // Subtle parallax
                     if (document.querySelectorAll('.content-panel.active').length === 0) {
-                        gsap.to(mainCamera.position, {
-                            x: homePosition.x + mouse.x * 2,
-                            y: homePosition.y + mouse.y * 2,
-                            duration: 1,
-                            ease: 'power2.out'
-                        });
-                        gsap.to(controls.target, {
-                            x: 0, y: 0, z: 0,
-                            duration: 1,
-                            ease: 'power2.out'
-                        });
+                        raycaster.setFromCamera(mouse, mainCamera);
+                        const planetMeshes = navNodes.map(group => group.children[0]);
+                        const intersects = raycaster.intersectObjects(planetMeshes);
+
+                        if (intersects.length > 0) {
+                            const intersectedMesh = intersects[0].object;
+                            const intersectedGroup = intersectedMesh.parent;
+
+                            if (hoveredNode !== intersectedGroup) {
+                                if (hoveredNode) {
+                                    gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 0, duration: 0.5 });
+                                    const oldText = hoveredNode.getObjectByName("text");
+                                    if (oldText) gsap.to(oldText.material, { opacity: 0, duration: 0.5 });
+                                }
+
+                                hoveredNode = intersectedGroup;
+                                playHover();
+                                customCursor.classList.add('hover-3d');
+                                
+                                gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 1.0, duration: 0.5 });
+                                const newText = hoveredNode.getObjectByName("text");
+                                if (newText) gsap.to(newText.material, { opacity: 1.0, duration: 0.5 });
+                            }
+                        } else {
+                            if (hoveredNode) {
+                                customCursor.classList.remove('hover-3d');
+                                gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 0, duration: 0.5 });
+                                const oldText = hoveredNode.getObjectByName("text");
+                                if (oldText) gsap.to(oldText.material, { opacity: 0, duration: 0.5 });
+                                hoveredNode = null;
+                            }
+                        }
+                    }
+
+                    if (document.querySelectorAll('.content-panel.active').length === 0) {
+                        if (!gsap.isTweening(mainCamera.position)) {
+                             mainCamera.position.x = THREE.MathUtils.lerp(mainCamera.position.x, homePosition.x + mouse.x * 2, 0.05);
+                             mainCamera.position.y = THREE.MathUtils.lerp(mainCamera.position.y, homePosition.y + mouse.y * 2, 0.05);
+                             controls.target.set(0,0,0);
+                        }
                     }
                     
                     mainCamera.lookAt(controls.target);
@@ -661,12 +1207,9 @@
             function flyToSection(targetId) {
                 playClick();
                 
-                // Hide home content
                 gsap.to("#home-content", { opacity: 0, duration: 0.5, pointerEvents: 'none' });
 
-                const targetNode = navNodes.find(n => n.name === targetId);
-                if (!targetNode) {
-                    // Fly home
+                if (!targetId) { // Fly home
                     gsap.to(mainCamera.position, {
                         x: homePosition.x, y: homePosition.y, z: homePosition.z,
                         duration: 1.5, ease: "power3.inOut"
@@ -676,30 +1219,27 @@
                         duration: 1.5, ease: "power3.inOut",
                         onComplete: () => {
                             gsap.to("#home-content", { opacity: 1, duration: 0.5, pointerEvents: 'none' });
+                            controls.enabled = false; 
                         }
                     });
                     return;
                 }
                 
                 const targetPanel = document.getElementById(targetId);
-                if (!targetPanel) return;
+                if (!targetPanel) return; 
 
-                let offset = new THREE.Vector3(0, 0, 4);
-                let targetPos = targetNode.position.clone().add(offset.applyQuaternion(targetNode.quaternion));
-                let targetLookAt = targetNode.position.clone();
-                
+                controls.enabled = false; 
                 gsap.to(mainCamera.position, {
-                    x: targetPos.x, y: targetPos.y, z: targetPos.z,
+                    x: 0, y: 1, z: 4, 
                     duration: 1.5,
                     ease: "power3.inOut",
                     onComplete: () => {
                         targetPanel.classList.add('active');
-                        // Animate text on modal open
                         animateHeadings(targetPanel);
                     }
                 });
                 gsap.to(controls.target, {
-                    x: targetLookAt.x, y: targetLookAt.y, z: targetLookAt.z,
+                    x: 0, y: 0, z: 0, 
                     duration: 1.5, ease: "power3.inOut"
                 });
             }
@@ -708,25 +1248,29 @@
                 playClick();
                 const activePanel = document.querySelector('.content-panel.active');
                 if (activePanel) {
+                    const targetNode = navNodes.find(n => n.name === activePanel.id);
+                    if (targetNode) {
+                        gsap.to(targetNode.children[0].material.uniforms.uShine, { value: 0, duration: 0.5 });
+                        const text = targetNode.getObjectByName("text");
+                        if (text) gsap.to(text.material, { opacity: 0, duration: 0.5 });
+                    }
                     activePanel.classList.remove('active');
                 }
-                flyToSection(null); // Fly back home
+                flyToSection(null); 
             }
 
-            // Bind nav links
             document.querySelectorAll('.nav-link').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
                     e.preventDefault();
                     const targetId = this.getAttribute('data-target');
                     
-                    // Close any open panels before flying
                     const activePanel = document.querySelector('.content-panel.active');
                     if (activePanel) {
-                        activePanel.classList.remove('active');
+                        closePanel(); 
                     }
 
                     if (targetId === "home") {
-                        flyToSection(null); // Fly home
+                        flyToSection(null); 
                     } else {
                         flyToSection(targetId);
                     }
@@ -736,18 +1280,12 @@
                 });
             });
 
-            // Bind 3D node clicks
             window.addEventListener('click', () => {
-                if (document.querySelector('.content-panel.active')) return; // Don't raycast if modal is open
-
-                raycaster.setFromCamera(mouse, mainCamera);
-                const intersects = raycaster.intersectObjects(navNodes);
-                if (intersects.length > 0) {
-                    flyToSection(intersects[0].object.name);
+                if (hoveredNode && !document.querySelector('.content-panel.active')) {
+                    flyToSection(hoveredNode.name);
                 }
             });
             
-            // Bind content panel close buttons
             document.querySelectorAll('.content-close-btn').forEach(btn => {
                 btn.addEventListener('click', closePanel);
             });
@@ -756,18 +1294,53 @@
             window.addEventListener('mousemove', e => {
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                // Simple translate for the circle cursor
                 customCursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
                 customCursor.style.opacity = '1';
+
+                // Handle hover/click scaling separately
+                 if (customCursor.classList.contains('clicked')) {
+                     customCursor.style.transform += ' scale(0.8)';
+                 } else if (customCursor.classList.contains('hover-3d')) {
+                     customCursor.style.transform += ' scale(2.5)'; // Scale for hover-3d
+                     // Ensure the border style is applied correctly
+                     customCursor.style.backgroundColor = 'transparent';
+                     customCursor.style.border = '2px solid var(--primary-accent)';
+                 } else {
+                     customCursor.style.transform += ' scale(1.0)';
+                     // Reset border style when not hovering
+                     customCursor.style.backgroundColor = 'var(--primary-accent)';
+                     customCursor.style.border = 'none';
+                 }
             });
+
             window.addEventListener('mousedown', () => {
                 customCursor.classList.add('clicked');
+                 // Apply click scale immediately
+                 let currentScale = customCursor.classList.contains('hover-3d') ? 2.5 : 1.0;
+                 customCursor.style.transform = `translate(${lastMousePos.x}px, ${lastMousePos.y}px) scale(${currentScale * 0.8})`; // Multiply existing scale by 0.8
+                 
                 if (!soundsReady) {
-                    Tone.start();
-                    soundsReady = true;
+                    // Try starting Tone context here, more reliable on user interaction
+                    Tone.start().then(() => {
+                        console.log("AudioContext started successfully!");
+                        soundsReady = true;
+                        playClick(); // Play immediately after context starts
+                    }).catch(e => {
+                        console.error("Error starting AudioContext:", e);
+                    });
+                } else {
+                    playClick(); // Play if already started
                 }
-                playClick();
             });
-            window.addEventListener('mouseup', () => customCursor.classList.remove('clicked'));
+            window.addEventListener('mouseup', () => {
+                 customCursor.classList.remove('clicked');
+                  // Restore scale based on hover state
+                 let scale = customCursor.classList.contains('hover-3d') ? 2.5 : 1.0;
+                 customCursor.style.transform = `translate(${lastMousePos.x}px, ${lastMousePos.y}px) scale(${scale})`;
+            });
+
             window.addEventListener('mouseout', () => customCursor.style.opacity = '0');
             
             // --- MUTE BUTTON ---
@@ -778,9 +1351,15 @@
                 isMuted = !isMuted;
                 soundOnIcon.classList.toggle('hidden', isMuted);
                 soundOffIcon.classList.toggle('hidden', !isMuted);
-                if (!soundsReady) {
-                    Tone.start();
-                    soundsReady = true;
+                
+                // Start context if it hasn't been started yet when unmuting
+                if (!isMuted && !soundsReady) {
+                     Tone.start().then(() => {
+                        console.log("AudioContext started on unmute.");
+                        soundsReady = true;
+                    }).catch(e => {
+                        console.error("Error starting AudioContext on unmute:", e);
+                    });
                 }
             });
             
@@ -816,7 +1395,7 @@
                 { name: "TensorFlow", desc: "Experience in building and training deep learning models for various tasks.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/tensorflow/tensorflow-original.svg" },
                 { name: "PyTorch", desc: "Proficient in creating neural networks for research and production environments.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/pytorch/pytorch-original.svg" },
                 { name: "OpenCV", desc: "Extensive use in computer vision projects for image and video analysis.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/opencv/opencv-original.svg" },
-                { name: "SQL", desc: "Strong skills in database design, querying, and management with MySQL.", icon: "httpss://raw.githubusercontent.com/devicons/devicon/master/icons/mysql/mysql-original.svg" },
+                { name: "SQL", desc: "Strong skills in database design, querying, and management with MySQL.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/mysql/mysql-original.svg" },
                 { name: "Oracle", desc: "Experience with Oracle databases for enterprise-level applications.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/oracle/oracle-original.svg" },
                 { name: "Node.js", desc: "Building scalable backend services and APIs.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original.svg" },
                 { name: "AWS", desc: "Familiar with deploying and managing applications on AWS.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" },
@@ -843,7 +1422,7 @@
                     const card = document.createElement('div');
                     card.className = 'project-card p-5 rounded-2xl w-full';
                     card.dataset.index = originalIndex;
-                    card.innerHTML = `<div class="relative w-full h-[230px]"><img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-2xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/151030/aaa6c3?text=Image+Not+Found';"/></div><div class="mt-5"><h3 class="text-white font-bold text-2xl">${p.name}</h3><p class="mt-2 text-sm text-gray-400">${p.desc}</p></div><div class="mt-4 flex gap-2">${p.tags.map(t => `<p class="tag gold-text-gradient">#${t.n}</p>`).join('')}</div>`;
+                    card.innerHTML = `<div class="relative w-full h-[230px]"><img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-2xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1A1A1A/D4AF37?text=Image+Not+Found';"/></div><div class="mt-5"><h3 class="text-white font-bold text-2xl">${p.name}</h3><p class="mt-2 text-sm text-gray-400">${p.desc}</p></div><div class="mt-4 flex gap-2">${p.tags.map(t => `<p class="tag gold-text-gradient">#${t.n}</p>`).join('')}</div>`;
                     projectsContainer.appendChild(card);
                 });
                 gsap.fromTo(projectsContainer.children, { y: 50, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8, ease: "power3.out", stagger: 0.1 });
@@ -854,7 +1433,8 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = 'tech-card p-4 rounded-lg flex flex-col items-center justify-center gap-2 gsap-reveal';
                 wrapper.dataset.index = index;
-                wrapper.innerHTML = `<img src="${tech.icon}" alt="${tech.name}" class="w-16 h-16 object-contain" /><p class="tech-name text-white font-medium text-center">${tech.name}</p>`;
+                // Added onerror fallback for tech icons
+                wrapper.innerHTML = `<img src="${tech.icon}" alt="${tech.name}" class="w-16 h-16 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1A1A1A/D4AF37?text=${tech.name}';" /><p class="tech-name text-white font-medium text-center">${tech.name}</p>`;
                 techContainer.appendChild(wrapper);
             });
 
@@ -926,11 +1506,13 @@
                         span.textContent = char === ' ' ? '\u00A0' : char;
                         heading.appendChild(span);
                     });
-                    gsap.fromTo(heading.querySelectorAll('.char'), { y: '115%' }, { y: 0, stagger: 0.05, delay: 0.5, duration: .1 });
+                    // Reset and play
+                    gsap.fromTo(heading.querySelectorAll('.char'), { y: '115%' }, { y: 0, stagger: 0.05, delay: 0.5, duration: 0.5, ease: 'power3.out' });
                 });
 
                 // Animate reveal elements
                 gsap.utils.toArray(panel.querySelectorAll('.gsap-reveal')).forEach(el => {
+                    // Reset and play
                     gsap.fromTo(el, {y: 50, autoAlpha: 0}, { y: 0, autoAlpha: 1, duration: 1.2, ease: "power3.out", stagger: 0.1, delay: 0.2 });
                 });
             }
@@ -972,6 +1554,7 @@
                 }
             }
 
+            // --- Init ---
             initMainScene();
             renderProjects(); 
             getGitHubStats();
