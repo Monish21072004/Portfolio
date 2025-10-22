@@ -18,31 +18,32 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://unpkg.com/tone@14.7.77/build/Tone.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Updated Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --bg-color: #050816;
-            --primary-accent: #915EFF; /* Current purple accent */
-            /* --primary-accent: #00E5FF; */ /* Optional: Change to cyan */
+            --primary-accent: #00E5FF; /* NEW: Changed to Electric Cyan */
+            --secondary-accent: #915EFF; /* Old purple, now for secondary elements */
             --secondary-text: #aaa6c3;
             --card-bg: #151030;
             --tertiary-bg: #100d25;
-            --cursor-color: #00E5FF;
+            --cursor-color: #915EFF; /* Swapped cursor to purple for contrast */
         }
         html { scroll-behavior: smooth; }
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', 'Poppins', sans-serif; /* NEW: Updated font */
             background-color: var(--bg-color);
-            background-image: url('https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/background.jpg'); 
+            background-image: url('https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/background.gif'); 
             background-size: cover;
             background-position: center center;
             background-attachment: fixed;
             color: var(--secondary-text);
             overflow-x: hidden;
             position: relative;
-            /* Updated background animation */
-            animation: slowPan 60s ease-in-out infinite alternate; 
         }
         body.modal-open, body.loading {
             overflow: hidden;
@@ -51,7 +52,6 @@
             content: '';
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            /* Base overlay opacity */
             background-color: rgba(5, 8, 22, 0.6); 
             background-image: 
                 linear-gradient(0deg, rgba(145,94,255,0.02) 1px, transparent 1px),
@@ -59,21 +59,11 @@
             background-size: 50px 50px;
             z-index: -1;
             pointer-events: none;
-            /* Added overlay pulse animation */
             animation: pulseGlow 10s ease-in-out infinite alternate;
         }
 
-        /* Keyframes for background animation */
-        @keyframes slowPan {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-         /* Keyframes for overlay pulse */
-        @keyframes pulseGlow {
-            0% { background-color: rgba(5, 8, 22, 0.55); } 
-            100% { background-color: rgba(5, 8, 22, 0.7); }
-        }
-
+        @keyframes slowPan { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+        @keyframes pulseGlow { 0% { background-color: rgba(5, 8, 22, 0.55); } 100% { background-color: rgba(5, 8, 22, 0.7); } }
 
         #hero-canvas, #about-canvas { cursor: none; }
         
@@ -98,19 +88,21 @@
         .nav-link:hover, .nav-link.active { color: white; }
         .resume-btn {
             border: 1px solid var(--primary-accent);
+            color: var(--primary-accent); /* NEW */
             padding: 0.3rem 0.8rem;
             border-radius: 9999px;
             transition: all 0.3s ease;
         }
         .resume-btn:hover {
             background-color: var(--primary-accent);
-            color: white;
+            color: var(--bg-color); /* NEW */
         }
 
         .section-wrapper { padding: 5rem 1rem; position: relative; z-index: 1; }
         @media (min-width: 768px) { .section-wrapper { padding: 7rem 2rem; } }
         
         .section-head { 
+            font-family: 'DM Serif Display', serif; /* NEW: Premium font */
             color: #fff; 
             font-weight: 800;
             overflow: hidden;
@@ -124,18 +116,19 @@
         .project-card, .experience-card {
             background: var(--tertiary-bg);
             transition: all 0.3s ease;
-            border: 1px solid rgba(145, 94, 255, 0.2);
+            border: 1px solid rgba(0, 229, 255, 0.2); /* NEW */
             cursor: pointer;
         }
         .project-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 10px 30px rgba(145, 94, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 229, 255, 0.15); /* NEW */
         }
 
         .tag { font-size: 14px; font-weight: bold; }
-        .blue-text-gradient { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .green-text-gradient { background: linear-gradient(90deg, #22c55e, #14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .pink-text-gradient { background: linear-gradient(90deg, #ec4899, #d94ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        /* NEW: Updated gradients to match cyan theme */
+        .blue-text-gradient { background: linear-gradient(90deg, #00E5FF, #3B82F6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .green-text-gradient { background: linear-gradient(90deg, #00E5FF, #22C55E); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .pink-text-gradient { background: linear-gradient(90deg, #00E5FF, #915EFF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
         .timeline { position: relative; max-width: 1200px; margin: 0 auto; }
         .timeline::after { content: ''; position: absolute; width: 6px; background-color: #2c215a; top: 0; bottom: 0; left: 50%; margin-left: -3px; }
@@ -155,6 +148,8 @@
 
         .gsap-reveal { opacity: 0; transform: translateY(40px); }
         .contact-icon-link:hover { transform: scale(1.1); background-color: var(--primary-accent); }
+        .contact-icon-link:hover svg { color: var(--bg-color); } /* NEW */
+
 
         #project-modal, #tech-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -165,7 +160,7 @@
         #project-modal.active, #tech-modal.active { opacity: 1; pointer-events: all; }
         
         .modal-content {
-            background: var(--card-bg); border: 1px solid rgba(145, 94, 255, 0.4);
+            background: var(--card-bg); border: 1px solid rgba(0, 229, 255, 0.4); /* NEW */
             border-radius: 8px; width: 90%; max-width: 900px; max-height: 90vh;
             overflow-y: auto; transform: scale(0.95); transition: transform 0.4s ease;
         }
@@ -181,12 +176,12 @@
         @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translate(-50%, 0); } 40% { transform: translate(-50%, -20px); } 60% { transform: translate(-50%, -10px); } }
 
         .filter-btn {
-            background-color: transparent; border: 1px solid rgba(145, 94, 255, 0.4);
+            background-color: transparent; border: 1px solid rgba(0, 229, 255, 0.4); /* NEW */
             color: var(--secondary-text); padding: 0.5rem 1.5rem; border-radius: 9999px;
             transition: all 0.3s ease; font-weight: 500;
         }
-        .filter-btn:hover { background-color: rgba(145, 94, 255, 0.1); border-color: var(--primary-accent); color: white; }
-        .filter-btn.active { background-color: var(--primary-accent); color: white; border-color: var(--primary-accent); }
+        .filter-btn:hover { background-color: rgba(0, 229, 255, 0.1); border-color: var(--primary-accent); color: white; } /* NEW */
+        .filter-btn.active { background-color: var(--primary-accent); color: var(--bg-color); border-color: var(--primary-accent); } /* NEW */
         
         #preloader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -210,15 +205,15 @@
 
         .tech-card {
             background-color: rgba(21, 16, 48, 0.5);
-            border: 1px solid rgba(145, 94, 255, 0.2);
+            border: 1px solid rgba(0, 229, 255, 0.2); /* NEW */
             transition: all 0.4s ease;
             cursor: pointer;
         }
         .tech-card:hover {
             background-color: rgba(21, 16, 48, 1);
             transform: translateY(-8px);
-            box-shadow: 0 0 20px rgba(145, 94, 255, 0.3);
-            border-color: rgba(145, 94, 255, 0.5);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3); /* NEW */
+            border-color: rgba(0, 229, 255, 0.5); /* NEW */
         }
         .tech-card img {
             filter: grayscale(100%) opacity(0.7);
@@ -260,7 +255,7 @@
                 <a href="#tech" class="nav-link text-lg font-medium">Tech</a>
                 <a href="#projects" class="nav-link text-lg font-medium">Projects</a>
                 <a href="#contact" class="nav-link text-lg font-medium">Contact</a>
-                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-lg font-medium text-white">Download Resume</a>
+                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-lg font-medium">Download Resume</a>
             </nav>
             <div class="md:hidden flex items-center">
                 <button id="mobile-menu-button" class="text-white focus:outline-none z-30">
@@ -276,7 +271,7 @@
                 <a href="#tech" class="nav-link mobile-nav-link text-lg font-medium">Tech</a>
                 <a href="#projects" class="nav-link mobile-nav-link text-lg font-medium">Projects</a>
                 <a href="#contact" class="nav-link mobile-nav-link text-lg font-medium">Contact</a>
-                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-lg font-medium text-white mt-2">Download Resume</a>
+                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-lg font-medium text-[var(--primary-accent)] mt-2">Download Resume</a>
             </div>
         </div>
     </header>
@@ -374,7 +369,9 @@
                     <div id="contact-icons" class="mt-12 flex items-center justify-center gap-10">
                         <a href="mailto:monishv217@gmail.com" class="contact-icon-link" aria-label="Email Monish"><svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg></a>
                         <a href="tel:+919345993268" class="contact-icon-link" aria-label="Call Monish"><svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.211-.992-.55-1.34L20.07 15.636a2.25 2.25 0 00-3.182 0l-1.97 1.97-1.56-1.56a11.25 11.25 0 01-6.176-6.176l1.56-1.56 1.97-1.97a2.25 2.25 0 000-3.182L6.841 3.9a2.25 2.25 0 00-1.34-.55H4.125A2.25 2.25 0 001.875 5.625v1.125z" /></svg></a>
-                        <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="contact-icon-link" aria-label="Monish's GitHub Profile"><svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg></a>
+                        <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="contact-icon-link" aria-label="Monish's GitHub Profile">
+                           <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.026 2.747-1.026.546 1.379.202 2.398.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12.017C22 6.484 17.523 2 12 2z" clip-rule="evenodd" /></svg>
+                        </a>
                     </div>
                 </div>
             </div>
