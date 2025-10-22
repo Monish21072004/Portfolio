@@ -390,6 +390,9 @@
             margin: 0;
             padding: 0;
             overflow: hidden; /* No scrolling on the body */
+             /* UPDATED: Custom Cursor Image from GitHub Raw URL */
+             /* Hotspot is set to 0 0 (top-left) for typical cursors */
+            cursor: url('https://github.com/Monish21072004/Portfolio/blob/main/cursor/Spaceship%20Cursor.png') 0 0, auto; 
         }
         body {
             font-family: 'Inter', sans-serif;
@@ -420,35 +423,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            cursor: none;
+            /* Removed cursor: none; */
             background: transparent; /* Make canvas transparent */
             z-index: 1; /* Ensure canvas is above the body pseudo-element */
         }
         
-        /* RESTORED: Original Gold Circle Cursor */
-        #custom-cursor {
-            position: fixed; top: 0; left: 0;
-            width: 10px; height: 10px;
-            background-color: var(--primary-accent);
-            border-radius: 50%;
-            pointer-events: none; z-index: 9999;
-            box-shadow: 0 0 15px var(--primary-accent), 0 0 25px var(--primary-accent);
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.1s ease-out; /* Removed linear */
-            transform: translate(-50%, -50%); /* Removed rotation */
-        }
-        #custom-cursor.clicked {
-            transform: translate(-50%, -50%) scale(0.8);
-        }
-        
-        /* Custom cursor state for 3D hover - Make circle an outline */
-        #custom-cursor.hover-3d {
-            transform: translate(-50%, -50%) scale(2.5);
-            background-color: transparent;
-            border: 2px solid var(--primary-accent);
-            box-shadow: 0 0 15px var(--primary-accent); /* Adjusted shadow */
-        }
-
+        /* REMOVED: #custom-cursor styles */
 
         .header {
             position: fixed;
@@ -650,8 +630,7 @@
 
     <div id="preloader"><div class="loader-orb"></div></div>
     
-    <!-- RESTORED: Original Gold Circle Cursor Div -->
-    <div id="custom-cursor"></div> 
+    <!-- REMOVED: #custom-cursor div -->
 
     <button id="mute-btn">
         <svg id="sound-on-icon" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707a1 1 0 011.414 0v14a1 1 0 01-1.414 0L5.586 15z"></path></svg>
@@ -864,7 +843,7 @@
 
             const clock = new THREE.Clock();
             const mouse = new THREE.Vector2();
-            const customCursor = document.getElementById('custom-cursor');
+            // REMOVED: customCursor variable
             let soundsReady = false;
             let isMuted = true;
             let mainScene, mainCamera, mainRenderer, raycaster, controls;
@@ -874,7 +853,7 @@
             const accentColor = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--primary-accent'));
             let coreGroup, sunCore, wireframeCore; // To hold the AI core components
             let coreBeat = { intensity: 1.0 }; // Start intensity at 1.0 for scaling
-            let lastMousePos = { x: 0, y: 0 }; // For cursor rotation - REMOVED angle logic here
+            let lastMousePos = { x: 0, y: 0 }; // Still needed for mouse coords
            
             // --- IMPROVED SOUND DESIGN (Space Theme) ---
             const reverb = new Tone.Freeverb({
@@ -893,12 +872,13 @@
             clickSound.volume.value = -15; 
 
             const heartbeatSound = new Tone.MembraneSynth({
-                 pitchDecay: 0.01, 
-                 octaves: 2,       
+                 pitchDecay: 0.008, // Slightly faster decay
+                 octaves: 3,       // Higher octave range
                  oscillator: { type: 'sine' },
-                 envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 }
+                 envelope: { attack: 0.001, decay: 0.25, sustain: 0.005, release: 0.1 } // Adjusted envelope
             }).toDestination();
-            heartbeatSound.volume.value = -18; // Keep it subtle
+            // INCREASED VOLUME SIGNIFICANTLY
+            heartbeatSound.volume.value = -8; 
             
             function playHover() { if (!isMuted) hoverSound.triggerAttackRelease("C6", "32n"); } 
             
@@ -914,24 +894,23 @@
             
             // --- Heartbeat Function ---
             function triggerHeartbeat() {
-                // FIX: Check if Tone has started and is not muted
+                // Check if Tone has started and is not muted
                 if (soundsReady && !isMuted) {
                      // Ensure context is running before scheduling
                     if (Tone.context.state !== 'running') {
                         Tone.context.resume().then(() => {
                            const now = Tone.now();
                            heartbeatSound.triggerAttackRelease('C1', '8n', now); // "lub"
-                           heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); // "DUB" - Increased delay slightly
+                           heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); // "DUB" 
                         });
                     } else {
                          const now = Tone.now();
                          heartbeatSound.triggerAttackRelease('C1', '8n', now); // "lub"
-                         heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); // "DUB" - Increased delay slightly
+                         heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); // "DUB" 
                     }
                 }
 
                 gsap.timeline()
-                    // Adjusted intensity values slightly for the new base scale
                     .to(coreBeat, { intensity: 1.15, duration: 0.1, ease: 'power2.out' }) // lub
                     .to(coreBeat, { intensity: 1.0, duration: 0.1, ease: 'power2.in' }) 
                     .to(coreBeat, { intensity: 1.25, duration: 0.1, delay: 0.05, ease: 'power2.out' }) // DUB
@@ -1164,7 +1143,7 @@
 
                                 hoveredNode = intersectedGroup;
                                 playHover();
-                                customCursor.classList.add('hover-3d');
+                                // REMOVED: customCursor.classList.add('hover-3d');
                                 
                                 gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 1.0, duration: 0.5 });
                                 const newText = hoveredNode.getObjectByName("text");
@@ -1172,7 +1151,7 @@
                             }
                         } else {
                             if (hoveredNode) {
-                                customCursor.classList.remove('hover-3d');
+                                // REMOVED: customCursor.classList.remove('hover-3d');
                                 gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 0, duration: 0.5 });
                                 const oldText = hoveredNode.getObjectByName("text");
                                 if (oldText) gsap.to(oldText.material, { opacity: 0, duration: 0.5 });
@@ -1292,34 +1271,17 @@
 
             // --- GLOBAL MOUSE & SOUND LISTENERS ---
             window.addEventListener('mousemove', e => {
+                // Update Three.js mouse vector
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-                // Simple translate for the circle cursor
-                customCursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-                customCursor.style.opacity = '1';
-
-                // Handle hover/click scaling separately
-                 if (customCursor.classList.contains('clicked')) {
-                     customCursor.style.transform += ' scale(0.8)';
-                 } else if (customCursor.classList.contains('hover-3d')) {
-                     customCursor.style.transform += ' scale(2.5)'; // Scale for hover-3d
-                     // Ensure the border style is applied correctly
-                     customCursor.style.backgroundColor = 'transparent';
-                     customCursor.style.border = '2px solid var(--primary-accent)';
-                 } else {
-                     customCursor.style.transform += ' scale(1.0)';
-                     // Reset border style when not hovering
-                     customCursor.style.backgroundColor = 'var(--primary-accent)';
-                     customCursor.style.border = 'none';
-                 }
+                // Update last mouse position for other logic if needed
+                lastMousePos.x = e.clientX;
+                lastMousePos.y = e.clientY;
+                // REMOVED: Custom cursor positioning/rotation logic
             });
 
             window.addEventListener('mousedown', () => {
-                customCursor.classList.add('clicked');
-                 // Apply click scale immediately
-                 let currentScale = customCursor.classList.contains('hover-3d') ? 2.5 : 1.0;
-                 customCursor.style.transform = `translate(${lastMousePos.x}px, ${lastMousePos.y}px) scale(${currentScale * 0.8})`; // Multiply existing scale by 0.8
+                // REMOVED: customCursor.classList.add('clicked'); logic
                  
                 if (!soundsReady) {
                     // Try starting Tone context here, more reliable on user interaction
@@ -1335,13 +1297,11 @@
                 }
             });
             window.addEventListener('mouseup', () => {
-                 customCursor.classList.remove('clicked');
-                  // Restore scale based on hover state
-                 let scale = customCursor.classList.contains('hover-3d') ? 2.5 : 1.0;
-                 customCursor.style.transform = `translate(${lastMousePos.x}px, ${lastMousePos.y}px) scale(${scale})`;
+                 // REMOVED: customCursor.classList.remove('clicked'); logic
             });
 
-            window.addEventListener('mouseout', () => customCursor.style.opacity = '0');
+            // REMOVED: mouseout listener for custom cursor opacity
+
             
             // --- MUTE BUTTON ---
             const muteBtn = document.getElementById('mute-btn');
