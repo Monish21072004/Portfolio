@@ -245,7 +245,8 @@
         }
         a, button, input, textarea, select, label,
         .project-card, .tech-card, .github-card, 
-        .contact-icon-link, .filter-btn, .modal-close-btn, #mute-btn {
+        .contact-icon-link, .filter-btn, .modal-close-btn, #mute-btn,
+        #explore-btn, #mobile-explore-btn { /* Added explore btns */
              cursor: none !important;
         }
 
@@ -293,7 +294,7 @@
             border: 1px solid var(--primary-accent); color: var(--primary-accent);
             padding: 0.3rem 0.8rem; border-radius: 9999px; transition: all 0.3s ease;
         }
-        .resume-btn:hover, .resume-btn.active { /* Added .active state */
+        .resume-btn:hover, .resume-btn.active { 
             background-color: var(--primary-accent); color: var(--bg-color); 
         }
 
@@ -404,8 +405,6 @@
         .filter-btn:hover { background-color: rgba(212, 175, 55, 0.1); border-color: var(--primary-accent); color: white; }
         .filter-btn.active { background-color: var(--primary-accent); color: var(--bg-color); border-color: var(--primary-accent); }
         
-        /* REMOVED: Add Project Form Styles */
-
         #preloader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-color); z-index: 9999;
@@ -434,6 +433,45 @@
         .tech-card:hover img { filter: grayscale(0%) opacity(1); }
         .tech-card .tech-name { opacity: 0; transform: translateY(10px); transition: all 0.4s ease; }
         .tech-card:hover .tech-name { opacity: 1; transform: translateY(0); }
+
+        /* NEW: Countdown and Rebuilding Styles */
+        #countdown-timer {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8rem;
+            font-family: 'DM Serif Display', serif;
+            color: white;
+            z-index: 99998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #rebuilding-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 99999;
+            display: none; 
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0; 
+        }
+        #rebuilding-overlay .loader-orb { 
+             width: 50px; height: 50px; border-radius: 50%; background: var(--primary-accent);
+            box-shadow: 0 0 20px var(--primary-accent), 0 0 40px var(--primary-accent);
+            animation: pulse 2s infinite ease-in-out;
+        }
+        #rebuilding-overlay p {
+            color: var(--secondary-text);
+            font-size: 1.25rem;
+            letter-spacing: 1px;
+            font-family: 'Inter', sans-serif;
+        }
+
 
     </style>
 </head>
@@ -467,12 +505,10 @@
                 <a href="#tech" class="nav-link text-base lg:text-lg font-medium" data-target="tech">Tech</a>
                 <a href="#projects" class="nav-link text-base lg:text-lg font-medium" data-target="projects">Projects</a>
                 <a href="#contact" class="nav-link text-base lg:text-lg font-medium" data-target="contact">Contact</a>
-                <!-- NEW: Explore Mode Button -->
                 <button id="explore-btn" class="resume-btn text-sm lg:text-lg font-medium ml-2">Explore Mode</button>
                 <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-sm lg:text-lg font-medium ml-2">Download Resume</a> 
             </nav>
             <div class="md:hidden flex items-center">
-                <!-- Add Explore button for mobile too if needed -->
                 <button id="mobile-menu-button" class="text-white focus:outline-none z-30">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg> 
                 </button>
@@ -487,7 +523,6 @@
                 <a href="#tech" class="nav-link mobile-nav-link text-lg font-medium" data-target="tech">Tech</a>
                 <a href="#projects" class="nav-link mobile-nav-link text-lg font-medium" data-target="projects">Projects</a>
                 <a href="#contact" class="nav-link mobile-nav-link text-lg font-medium" data-target="contact">Contact</a>
-                 <!-- NEW: Explore Mode Button (Mobile) -->
                 <button id="mobile-explore-btn" class="resume-btn nav-link text-lg font-medium text-[var(--primary-accent)] mt-2">Explore Mode</button>
                 <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-lg font-medium text-[var(--primary-accent)] mt-2">Download Resume</a>
             </div>
@@ -495,6 +530,16 @@
     </header>
 
     <canvas id="main-canvas"></canvas>
+
+    <!-- NEW: Countdown Timer -->
+    <div id="countdown-timer">3</div>
+
+    <!-- NEW: Rebuilding Overlay -->
+    <div id="rebuilding-overlay">
+        <div class="loader-orb"></div>
+        <p>Universe Rebuilding...</p>
+    </div>
+
 
     <div id="home-content" class="absolute inset-0 flex justify-center items-center z-10 pointer-events-none px-4"> 
         <div class="text-center">
@@ -538,7 +583,6 @@
         <button class="modal-close-btn content-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
     
-    <!-- Restored GitHub Panel HTML -->
     <div id="github-stats" class="content-panel">
         <div class="content-wrapper">
              <div class="gsap-reveal text-center"> 
@@ -579,11 +623,9 @@
                 <p class="mt-4 md:mt-6 text-base md:text-lg text-secondary-text max-w-3xl text-center"> 
                     My projects demonstrate my skills through real-world examples...
                 </p>
-                <!-- Project Filters container -->
                 <div id="project-filters" class="mt-6 md:mt-8 flex flex-wrap gap-3 md:gap-4 justify-center">
-                    <!-- Buttons are added by JS -->
+                    <!-- Buttons added by JS -->
                 </div> 
-                 <!-- REMOVED Add New Project Button -->
             </div>
             <div id="projects-container" class="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"></div> 
         </div>
@@ -632,8 +674,6 @@
             </div>
         </div>
     </div>
-
-    <!-- REMOVED Add Project Modal -->
     
     <script type="module">
         import * as THREE from 'three';
@@ -649,7 +689,7 @@
             const customCursor = document.getElementById('custom-cursor'); 
             let soundsReady = false;
             let isMuted = true;
-            let mainScene, mainCamera, mainRenderer, raycaster, controls, asteroidBelt; // Added asteroidBelt
+            let mainScene, mainCamera, mainRenderer, raycaster, controls, asteroidBelt, stars; 
             let hoveredNode = null;
             const navNodes = []; 
             const homePosition = new THREE.Vector3(0, 5, 25); 
@@ -658,8 +698,9 @@
             let coreBeat = { intensity: 1.0 }; 
             let lastMousePos = { x: 0, y: 0 }; 
             let nebulaPlane; 
-            let isExploreMode = false; // NEW state for explore mode
-            const textureLoader = new THREE.TextureLoader(); // NEW: Define texture loader globally
+            let isExploreMode = false; 
+            let isUniverseEnding = false; 
+            const textureLoader = new THREE.TextureLoader(); 
 
             // --- JS Smoothstep function ---
              function smoothstep(edge0, edge1, x) {
@@ -668,15 +709,9 @@
             }
            
             // --- SOUND DESIGN ---
-            // NEW: Ambient space drone
-            const ambientDrone = new Tone.AutoFilter({
-                frequency: "8n",
-                baseFrequency: 100,
-                octaves: 4,
-                filter: { type: "lowpass", Q: 2 },
-            }).toDestination().start();
+            const ambientDrone = new Tone.AutoFilter({ frequency: "8n", baseFrequency: 100, octaves: 4, filter: { type: "lowpass", Q: 2 }, }).toDestination().start();
             const noise = new Tone.Noise("brown").connect(ambientDrone);
-            noise.volume.value = -30; // Very subtle
+            noise.volume.value = -30; 
 
             const reverb = new Tone.Freeverb({ roomSize: 0.7, dampening: 4000 }).toDestination();
             const hoverSound = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.1 } }).connect(reverb);
@@ -685,6 +720,15 @@
             clickSound.volume.value = -15; 
             const heartbeatSound = new Tone.MembraneSynth({ pitchDecay: 0.008, octaves: 3, oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.25, sustain: 0.005, release: 0.1 } }).toDestination();
             heartbeatSound.volume.value = -8; 
+
+            // NEW: End sequence sounds
+            const coreImplosionSound = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 1.5, sustain: 0, release: 1 }, frequency: 200 }).toDestination();
+            coreImplosionSound.volume.value = -5;
+            // UPDATED: Replaced NoiseSynth with a deep MembraneSynth for a "thump"
+            const coreExplosionSound = new Tone.MembraneSynth({ pitchDecay: 0.1, octaves: 2, oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.5, sustain: 0, release: 0.1 } }).toDestination();
+            coreExplosionSound.volume.value = -1; // Make it loud
+            const rebuildingSound = new Tone.FMSynth({ modulationIndex: 8, harmonicity: 2, envelope: { attack: 0.1, decay: 0.2, sustain: 0.1, release: 0.1 }, modulationEnvelope: { attack: 0.05, decay: 0.1, sustain: 0.2, release: 0.1 } }).toDestination();
+            rebuildingSound.volume.value = -10;
             
             function playHover() { if (!isMuted) hoverSound.triggerAttackRelease("C6", "32n"); } 
             function playClick() { 
@@ -696,6 +740,7 @@
             
             // --- Heartbeat ---
             function triggerHeartbeat() {
+                if (isUniverseEnding) return; 
                 if (soundsReady && !isMuted) {
                     const play = () => {
                         const now = Tone.now();
@@ -739,13 +784,11 @@
                 raycaster = new THREE.Raycaster(); raycaster.near = 0.1; raycaster.far = 50;
                 
                 controls = new OrbitControls(mainCamera, mainRenderer.domElement);
-                controls.enabled = false; // Disabled by default, enabled by Explore Mode
-                controls.enableDamping = true; controls.dampingFactor = 0.05; 
+                controls.enabled = false; controls.enableDamping = true; controls.dampingFactor = 0.05; 
                 controls.target.set(0, 0, 0);
-                controls.minDistance = 5; // Prevent zooming inside core
-                controls.maxDistance = 50; // Prevent zooming too far out
+                controls.minDistance = 5; controls.maxDistance = 50; 
 
-                mainScene.add(new THREE.AmbientLight(0xffffff, 0.5)); // Slightly brighter ambient
+                mainScene.add(new THREE.AmbientLight(0xffffff, 0.5)); 
                 const pointLight = new THREE.PointLight(0xffffff, 1.0); pointLight.position.set(0, 0, 0); mainScene.add(pointLight);
 
                 // Starfield
@@ -753,7 +796,7 @@
                 for (let i = 0; i < 10000; i++) { starVertices.push((Math.random()-0.5)*300, (Math.random()-0.5)*300, (Math.random()-0.5)*300); } 
                 starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
                 const starMaterial = new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.15, transparent: true, opacity: 0.6 }); 
-                const stars = new THREE.Points(starGeometry, starMaterial); mainScene.add(stars);
+                stars = new THREE.Points(starGeometry, starMaterial); mainScene.add(stars); 
 
                  // --- Nebula Effect ---
                 const nebulaMaterial = new THREE.ShaderMaterial({
@@ -784,20 +827,17 @@
 
                 // --- Asteroid Belt ---
                 const asteroidCount = 1500;
-                const asteroidGeometry = new THREE.IcosahedronGeometry(0.1, 0); // Simple shape
-                const asteroidMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 1.0 });
+                const asteroidGeometry = new THREE.IcosahedronGeometry(0.1, 0); 
+                const asteroidMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 1.0, transparent: true, opacity: 1.0 }); 
                 asteroidBelt = new THREE.InstancedMesh(asteroidGeometry, asteroidMaterial, asteroidCount);
                 
                 const dummy = new THREE.Object3D();
-                const matrix = new THREE.Matrix4();
-                const beltRadius = 12.5; // Average radius
-                const beltWidth = 3;     // Width of the belt
+                const beltRadius = 12.5; const beltWidth = 3;     
                 
                 for (let i = 0; i < asteroidCount; i++) {
                     const radius = beltRadius + (Math.random() - 0.5) * beltWidth;
                     const angle = Math.random() * Math.PI * 2;
-                    const y = (Math.random() - 0.5) * 0.2; // Slight inclination
-                    
+                    const y = (Math.random() - 0.5) * 0.2; 
                     dummy.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
                     dummy.scale.setScalar(0.2 + Math.random() * 0.7);
                     dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
@@ -819,7 +859,6 @@
                     { id: 'github-stats', label: 'GitHub', radius: 11, speed: 0.08, inclination: 0.15, eccentricity: 0.08, shader: 'lavaFragmentShader' },
                     { id: 'contact', label: 'Contact', radius: 20, speed: 0.04, inclination: 0.0, eccentricity: 0.01, shader: 'terrestrialFragmentShader' } 
                 ];
-                // Tech Moons Data (URLs from technologiesData)
                 const techMoonData = [
                     { icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg", pos: [1, 0, 0.2] },
                     { icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg", pos: [-0.5, 0.2, 1] },
@@ -841,7 +880,8 @@
                         const planetMaterial = new THREE.ShaderMaterial({
                             vertexShader: document.getElementById('planetVertexShader').textContent,
                             fragmentShader: noiseCode + document.getElementById(item.shader).textContent,
-                            uniforms: uniforms
+                            uniforms: uniforms,
+                            transparent: true 
                         });
 
                         const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial); planetMesh.name = item.id; nodeGroup.add(planetMesh);
@@ -850,16 +890,15 @@
                             const ringMaterial = new THREE.ShaderMaterial({ vertexShader: document.getElementById('planetVertexShader').textContent, fragmentShader: noiseCode + document.getElementById('ringFragmentShader').textContent, uniforms: { uTime: { value: 0 } }, transparent: true, side: THREE.DoubleSide });
                             const ringMesh = new THREE.Mesh(ringGeom, ringMaterial); ringMesh.rotation.x = Math.PI * 0.4; nodeGroup.add(ringMesh);
                         }
-                        // NEW: Add Tech Moons
                         if (item.id === 'tech') {
                             techMoonData.forEach((moonData, moonIndex) => {
                                 const texture = textureLoader.load(moonData.icon);
                                 const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthWrite: false });
                                 const geometry = new THREE.PlaneGeometry(0.5, 0.5);
                                 const mesh = new THREE.Mesh(geometry, material);
-                                mesh.position.set(moonData.pos[0], moonData.pos[1], moonData.pos[2]).normalize().multiplyScalar(1.4); // Orbit distance
-                                mesh.userData.orbitSpeed = 0.2 + Math.random() * 0.3; // Random speed
-                                mesh.userData.orbitAxis = new THREE.Vector3(Math.random() - 0.5, 1, Math.random() - 0.5).normalize(); // Random axis
+                                mesh.position.set(moonData.pos[0], moonData.pos[1], moonData.pos[2]).normalize().multiplyScalar(1.4); 
+                                mesh.userData.orbitSpeed = 0.2 + Math.random() * 0.3; 
+                                mesh.userData.orbitAxis = new THREE.Vector3(Math.random() - 0.5, 1, Math.random() - 0.5).normalize(); 
                                 mesh.name = "tech-moon";
                                 nodeGroup.add(mesh);
                             });
@@ -878,47 +917,42 @@
                     requestAnimationFrame(animate);
                     const elapsedTime = clock.getElapsedTime();
                     
-                    if (sunCore && wireframeCore) { 
-                        sunCore.scale.setScalar(coreBeat.intensity * 0.75); 
-                        wireframeCore.scale.setScalar(coreBeat.intensity * 1.0); 
-                        sunCore.material.uniforms.uTime.value = elapsedTime * 0.5; 
-                    }
-                    ring1.rotation.z = elapsedTime * 0.2; ring2.rotation.z = elapsedTime * 0.2; particles.rotation.y = -elapsedTime * 0.05; coreGroup.rotation.y = elapsedTime * 0.1;
-                    
-                    // Animate Asteroid Belt
-                    if (asteroidBelt) { asteroidBelt.rotation.y = elapsedTime * 0.03; }
-
-                    navNodes.forEach((node) => {
-                        const data = node.userData; const angle = elapsedTime * data.speed; const e = data.eccentricity; 
-                        const r = data.radius * (1 - e*e) / (1 + e * Math.cos(angle));
-                        node.position.x = Math.cos(angle) * r; node.position.y = Math.sin(angle) * r * Math.sin(data.inclination); node.position.z = Math.sin(angle) * r * Math.cos(data.inclination);
-                        const planetMesh = node.children[0]; 
-                        if (planetMesh.material.uniforms.uTime) {
-                           planetMesh.material.uniforms.uTime.value = elapsedTime;
+                    if (!isUniverseEnding) { 
+                        if (sunCore && wireframeCore) { 
+                            sunCore.scale.setScalar(coreBeat.intensity * 0.75); 
+                            wireframeCore.scale.setScalar(coreBeat.intensity * 1.0); 
+                            sunCore.material.uniforms.uTime.value = elapsedTime * 0.5; 
                         }
-                        planetMesh.rotation.y += 0.001; 
-                        if(data.id === 'contact' && node.children[1] && node.children[1].material.uniforms.uTime) { 
-                            node.children[1].material.uniforms.uTime.value = elapsedTime; 
-                        }
-                        
-                        // Animate Tech Moons
-                        if(data.id === 'tech') {
-                            node.children.forEach(child => {
-                                if (child.name === "tech-moon") {
-                                    child.position.applyAxisAngle(child.userData.orbitAxis, 0.01 * child.userData.orbitSpeed);
-                                    child.quaternion.copy(mainCamera.quaternion); // Always face camera
-                                }
-                            });
-                        }
+                        ring1.rotation.z = elapsedTime * 0.2; ring2.rotation.z = elapsedTime * 0.2; particles.rotation.y = -elapsedTime * 0.05; coreGroup.rotation.y = elapsedTime * 0.1;
+                        if (asteroidBelt) { asteroidBelt.rotation.y = elapsedTime * 0.03; }
+                        if (nebulaPlane) { nebulaPlane.material.uniforms.uTime.value = elapsedTime; }
 
-                        const textMesh = node.getObjectByName("text"); if (textMesh) { textMesh.quaternion.copy(mainCamera.quaternion); }
-                    });
-
-                    if (nebulaPlane) { nebulaPlane.material.uniforms.uTime.value = elapsedTime; }
+                        navNodes.forEach((node) => {
+                            const data = node.userData; const angle = elapsedTime * data.speed; const e = data.eccentricity; 
+                            const r = data.radius * (1 - e*e) / (1 + e * Math.cos(angle));
+                            node.position.x = Math.cos(angle) * r; node.position.y = Math.sin(angle) * r * Math.sin(data.inclination); node.position.z = Math.sin(angle) * r * Math.cos(data.inclination);
+                            const planetMesh = node.children[0]; 
+                            if (planetMesh.material.uniforms.uTime) {
+                               planetMesh.material.uniforms.uTime.value = elapsedTime;
+                            }
+                            planetMesh.rotation.y += 0.001; 
+                            if(data.id === 'contact' && node.children[1] && node.children[1].material.uniforms.uTime) { 
+                                node.children[1].material.uniforms.uTime.value = elapsedTime; 
+                            }
+                            if(data.id === 'tech') {
+                                node.children.forEach(child => {
+                                    if (child.name === "tech-moon") {
+                                        child.position.applyAxisAngle(child.userData.orbitAxis, 0.01 * child.userData.orbitSpeed);
+                                        child.quaternion.copy(mainCamera.quaternion); 
+                                    }
+                                });
+                            }
+                            const textMesh = node.getObjectByName("text"); if (textMesh) { textMesh.quaternion.copy(mainCamera.quaternion); }
+                        });
+                    } 
 
                     let coreProximityValue = 0;
-                    // Only run raycaster and parallax if NOT in explore mode
-                    if (!isExploreMode) {
+                    if (!isExploreMode && !isUniverseEnding) {
                         if (document.querySelectorAll('.content-panel.active').length === 0) {
                             raycaster.setFromCamera(mouse, mainCamera);
                             const planetMeshes = navNodes.map(group => group.children[0]);
@@ -936,21 +970,20 @@
                                coreProximityValue = 1.0 - smoothstep(0.0, 0.4, mouseDistance); 
                             }
                         } else { if (hoveredNode) { customCursor.classList.remove('hover'); hoveredNode = null; } }
-                    } // end !isExploreMode block
+                    } 
 
                     if (sunCore && sunCore.material.uniforms.uCoreProximity) { 
                         gsap.to(sunCore.material.uniforms.uCoreProximity, { value: coreProximityValue, duration: 0.3 }); 
                     }
 
-                    // Only run parallax if NOT in explore mode and no panel is active
-                    if (!isExploreMode && document.querySelectorAll('.content-panel.active').length === 0 && !gsap.isTweening(mainCamera.position)) {
+                    if (!isExploreMode && !isUniverseEnding && document.querySelectorAll('.content-panel.active').length === 0 && !gsap.isTweening(mainCamera.position)) {
                          mainCamera.position.x = THREE.MathUtils.lerp(mainCamera.position.x, homePosition.x + mouse.x * 1.5, 0.05); 
                          mainCamera.position.y = THREE.MathUtils.lerp(mainCamera.position.y, homePosition.y + mouse.y * 1.5, 0.05);
                          controls.target.set(0,0,0);
                     }
 
                     mainCamera.lookAt(controls.target); 
-                    controls.update(); // Update controls *every* frame (needed for damping)
+                    controls.update(); 
                     mainRenderer.render(mainScene, mainCamera);
                 };
                 animate();
@@ -966,8 +999,8 @@
             } // End initMainScene
 
             // --- CAMERA NAVIGATION & PANEL LOGIC --- 
-            // UPDATED flyToSection to "fly-to-planet"
              function flyToSection(targetId) {
+                if (isUniverseEnding) return; 
                 playClick();
                 gsap.to("#home-content", { opacity: 0, duration: 0.5, pointerEvents: 'none' });
 
@@ -982,21 +1015,15 @@
                 }
                 
                 const targetNode = navNodes.find(n => n.name === targetId);
-                if (!targetNode) {
-                    console.error("Target node not found:", targetId);
-                    flyToSection(null); // Go home if node not found
-                    return;
-                }
-
+                if (!targetNode) { console.error("Target node not found:", targetId); flyToSection(null); return; }
                 const targetPanel = document.getElementById(targetId);
                 if (!targetPanel) return; 
 
-                // Calculate target position relative to the planet
-                const offset = new THREE.Vector3(0, 1.5, 4); // View from +Z axis relative to planet
+                const offset = new THREE.Vector3(0, 1.5, 4); 
                 const targetPos = targetNode.position.clone().add(offset);
                 const targetLookAt = targetNode.position.clone();
 
-                controls.enabled = false; // Disable controls during flight
+                controls.enabled = false; 
                 gsap.to(mainCamera.position, { 
                     x: targetPos.x, y: targetPos.y, z: targetPos.z, 
                     duration: 1.5, ease: "power3.inOut", 
@@ -1012,6 +1039,7 @@
             }
 
             function closePanel() {
+                if (isUniverseEnding) return; 
                 playClick();
                 const activePanel = document.querySelector('.content-panel.active');
                 if (activePanel) {
@@ -1023,16 +1051,13 @@
                     }
                     activePanel.classList.remove('active');
                 }
-                // Only fly home if NOT in explore mode
-                if (!isExploreMode) {
-                    flyToSection(null); 
-                }
+                if (!isExploreMode) { flyToSection(null); }
             }
 
             document.querySelectorAll('.nav-link').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
                     e.preventDefault();
-                    // If in explore mode, exit it
+                    if (isUniverseEnding) return; 
                     if (isExploreMode) { toggleExploreMode(); }
                     
                     const targetId = this.getAttribute('data-target');
@@ -1045,10 +1070,31 @@
                 });
             });
 
+            // UPDATED: Click listener with FIX for click-through
             window.addEventListener('click', () => {
-                // Only trigger fly-to on click if NOT in explore mode
-                if (!isExploreMode && hoveredNode && !document.querySelector('.content-panel.active')) {
+                if (isUniverseEnding) return; // Block all clicks
+
+                // Check if a panel is active *first*
+                // This is the critical fix. If a panel is open, we stop all 3D click checks.
+                if (document.querySelectorAll('.content-panel.active').length > 0) {
+                    return; 
+                }
+
+                // Planet click logic (only if no panel is active)
+                if (!isExploreMode && hoveredNode) {
                     flyToSection(hoveredNode.name);
+                    return; // Don't check for core click if a planet was clicked
+                }
+                
+                // Core click logic (only if no panel is active and not hovering a planet)
+                if (!hoveredNode) { 
+                    raycaster.setFromCamera(mouse, mainCamera);
+                    const coreMeshes = [sunCore, wireframeCore];
+                    const coreIntersects = raycaster.intersectObjects(coreMeshes);
+                    
+                    if (coreIntersects.length > 0) {
+                        triggerUniverseEnd(); // Kaboom!
+                    }
                 }
             });
             
@@ -1058,6 +1104,7 @@
 
             // --- EXPLORE MODE LOGIC ---
             function toggleExploreMode() {
+                if (isUniverseEnding) return; // Block
                 playClick();
                 isExploreMode = !isExploreMode;
                 controls.enabled = isExploreMode;
@@ -1068,22 +1115,111 @@
                 if (isExploreMode) {
                     if (exploreBtn) { exploreBtn.textContent = "Exit Explore"; exploreBtn.classList.add('active'); }
                     if (mobileExploreBtn) { mobileExploreBtn.textContent = "Exit Explore"; mobileExploreBtn.classList.add('active'); }
-                    closePanel(); // Close any open panel
+                    closePanel(); 
                     gsap.to("#home-content", { opacity: 0, duration: 0.5, pointerEvents: 'none' });
-                    // Set target to center when starting explore
                     controls.target.set(0,0,0);
                 } else {
                     if (exploreBtn) { exploreBtn.textContent = "Explore Mode"; exploreBtn.classList.remove('active'); }
                     if (mobileExploreBtn) { mobileExploreBtn.textContent = "Explore Mode"; mobileExploreBtn.classList.remove('active'); }
-                    flyToSection(null); // Fly home
+                    flyToSection(null); 
                 }
                 
-                // Close mobile menu if it's open
                 const mobileMenu = document.getElementById('mobile-menu');
                 if (mobileMenu) mobileMenu.classList.add('hidden');
             }
             document.getElementById('explore-btn')?.addEventListener('click', toggleExploreMode);
             document.getElementById('mobile-explore-btn')?.addEventListener('click', toggleExploreMode);
+
+            // --- UNIVERSE END SEQUENCE ---
+            function triggerUniverseEnd() {
+                if (isUniverseEnding) return;
+                isUniverseEnding = true;
+                
+                console.log("Universe End Sequence Started!");
+                
+                const countdownTimer = document.getElementById('countdown-timer');
+                const rebuildingOverlay = document.getElementById('rebuilding-overlay');
+                
+                // Stop other interactions
+                if (isExploreMode) { toggleExploreMode(); } // Exit explore mode
+                closePanel(); // Close any open panel
+                if (customCursor) customCursor.style.opacity = '0'; // Hide cursor
+                
+                // 1. Sound & Countdown
+                if (!isMuted) {
+                    if (Tone.context.state !== 'running') Tone.context.resume();
+                     coreImplosionSound.frequency.rampTo(50, 3); // Frequency ramp down
+                    coreImplosionSound.triggerAttack("C2", Tone.now());
+                }
+
+                if(countdownTimer) {
+                    countdownTimer.style.opacity = '1';
+                    countdownTimer.textContent = "3";
+                    gsap.to(countdownTimer, { innerText: 2, duration: 1, delay: 1, ease: "none", onUpdate: () => countdownTimer.textContent = Math.round(gsap.getProperty(countdownTimer, "innerText")) });
+                    gsap.to(countdownTimer, { innerText: 1, duration: 1, delay: 2, ease: "none", onUpdate: () => countdownTimer.textContent = Math.round(gsap.getProperty(countdownTimer, "innerText")) });
+                    gsap.to(countdownTimer, { innerText: 0, duration: 1, delay: 3, ease: "none", onUpdate: () => countdownTimer.textContent = Math.round(gsap.getProperty(countdownTimer, "innerText")) });
+                }
+
+                // 2. Shrink Core
+                gsap.to(coreGroup.scale, { x: 0.01, y: 0.01, z: 0.01, duration: 3.2, ease: "power2.in" });
+
+                // 3. After countdown... BOOM
+                gsap.delayedCall(3.5, () => {
+                    if (countdownTimer) countdownTimer.style.opacity = '0';
+
+                    // 4. Explosion Sound
+                    if (!isMuted) {
+                        coreExplosionSound.triggerAttackRelease("C1", "1n", Tone.now());
+                    }
+
+                    // 5. Create & Animate Shockwave
+                    const shockwaveGeom = new THREE.CircleGeometry(1, 64);
+                    const shockwaveMat = new THREE.MeshBasicMaterial({ 
+                        color: 0xffffff, 
+                        transparent: true, 
+                        opacity: 0.9,
+                        map: textureLoader.load('https://threejs.org/examples/textures/sprites/spark1.png'),
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false
+                    });
+                    const shockwave = new THREE.Mesh(shockwaveGeom, shockwaveMat);
+                    shockwave.scale.set(0.01, 0.01, 0.01);
+                    mainScene.add(shockwave);
+
+                    gsap.to(shockwave.scale, { x: 50, y: 50, z: 50, duration: 1.0, ease: "power2.out" });
+                    gsap.to(shockwave.material, { opacity: 0, duration: 1.2, ease: "power1.in", delay: 0.3, onComplete: () => mainScene.remove(shockwave) });
+
+                    // 6. Fade out everything else
+                    navNodes.forEach(node => gsap.to(node.scale, { x: 0.01, y: 0.01, z: 0.01, duration: 0.5, delay: 0.2 }));
+                    if (asteroidBelt) gsap.to(asteroidBelt.material, { opacity: 0, duration: 0.5, delay: 0.2 });
+                    if (nebulaPlane) gsap.to(nebulaPlane.material, { opacity: 0, duration: 0.5, delay: 0.2 });
+                    if (stars) gsap.to(stars.material, { opacity: 0, duration: 0.5, delay: 0.2 });
+                    gsap.to(coreGroup.scale, { x: 0.01, y: 0.01, z: 0.01, duration: 0.5, delay: 0.2 }); // Ensure core stays small/gone
+
+
+                    // 7. Show Rebuilding Screen
+                    gsap.delayedCall(1.0, () => {
+                        if(rebuildingOverlay) {
+                            rebuildingOverlay.style.display = 'flex';
+                            gsap.to(rebuildingOverlay, { opacity: 1, duration: 0.5 });
+                        }
+                        if (!isMuted) {
+                            rebuildingSound.triggerAttackRelease("C3", "0.5s", Tone.now() + 0.1);
+                            rebuildingSound.triggerAttackRelease("G3", "0.5s", Tone.now() + 0.4);
+                            rebuildingSound.triggerAttackRelease("C4", "0.5s", Tone.now() + 0.7);
+                        }
+                    });
+
+                    // 8. Reload
+                    gsap.delayedCall(4.0, () => { // 1.0s delay + 3s rebuild time
+                        if(rebuildingOverlay) {
+                            gsap.to(rebuildingOverlay, { opacity: 0, duration: 0.5, onComplete: () => location.reload() });
+                        } else {
+                            location.reload(); // Fallback
+                        }
+                    });
+                });
+            }
 
 
             // --- GLOBAL MOUSE & SOUND ---
@@ -1102,14 +1238,14 @@
                     Tone.start().then(() => { 
                         soundsReady = true; 
                         playClick(); 
-                        if (noise.state !== "started") noise.start(0); // Start ambient noise
+                        if (noise.state !== "started") noise.start(0); 
                     }).catch(e => console.error("AudioCtx start err:", e));
                 } else { playClick(); }
                  setTimeout(() => customCursor?.classList.remove('clicked'), 100); 
             });
              
             // Hover listeners for 2D elements 
-            const interactiveElements = document.querySelectorAll('a, button, input, textarea, select, label, .project-card, .tech-card, .github-card, .contact-icon-link, .filter-btn, .modal-close-btn, #mute-btn, #explore-btn, #mobile-explore-btn'); // Added explore btns
+            const interactiveElements = document.querySelectorAll('a, button, input, textarea, select, label, .project-card, .tech-card, .github-card, .contact-icon-link, .filter-btn, .modal-close-btn, #mute-btn, #explore-btn, #mobile-explore-btn'); 
             interactiveElements.forEach(el => {
                 el.addEventListener('mouseenter', () => customCursor?.classList.add('hover'));
                 el.addEventListener('mouseleave', () => customCursor?.classList.remove('hover'));
@@ -1124,8 +1260,7 @@
                     isMuted = !isMuted;
                     soundOnIcon.classList.toggle('hidden', isMuted);
                     soundOffIcon.classList.toggle('hidden', !isMuted);
-                    // Mute/unmute Tone.js master output
-                    Tone.Destination.mute = isMuted;
+                    Tone.Destination.mute = isMuted; // Mute all sound
 
                     if (!isMuted && !soundsReady) {
                         Tone.start().then(() => { 
@@ -1148,7 +1283,7 @@
                  { title: "AI & ML Developer", company: "Samsung PRISM", points: ["Developed AI reverse prompt generator analyzing images to create text prompts.", "Engineered AI proctoring system with real-time face detection.", "Utilized GANs for medical image segmentation and enhancement.", "Trained models using Python, TensorFlow, and OpenCV."] },
                 { title: "Full-Stack Developer", company: "Personal Projects", points: ["Architected 'API-Forge,' a no-code backend solution.", "Designed robust relational database systems for various applications.", "Developed a full-featured social media website.", "Created scalable cloud networks using CISCO simulation tools."] }
             ];
-             const projectsData = [ // Using the hardcoded data
+             const projectsData = [ 
                 { name: "Medical Image Segmentation", category: "ai", desc: "Utilized GANs for segmenting bone fractures in medical imagery.", tags: [{n: "GANs", c: "gold"}, {n: "AI/ML", c: "gold"}, {n: "Python", c: "gold"}], link: "https://github.com/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/medical_image_segmentation_usi.png" },
                 { name: "API-Forge: No-Code Backend", category: "web", desc: "A no-code backend solution simplifying API creation.", tags: [{n: "Backend", c: "gold"}, {n: "Node.js", c: "gold"}, {n: "API", c: "gold"}], link: "https://github.com/Monish21072004/API-Forge", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/api_forge__no_code_backend_a_n.png" },
                 { name: "Dragon Proctor: AI Proctoring", category: "ai", desc: "AI proctoring solution with real-time facial detection.", tags: [{n: "CompVision", c: "gold"}, {n: "AI", c: "gold"}, {n: "OpenCV", c: "gold"}], link: "https://github.com/Monish21072004/dragon_proctor", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/dragon_proctor__ai_proctoring_.png" },
