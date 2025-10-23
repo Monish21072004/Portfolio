@@ -30,7 +30,7 @@
     ================================================================
     -->
 
-    <!-- Noise Function (used by all shaders) -->
+    <!-- Noise Function (used by multiple shaders) -->
     <script type="text/plain" id="glsl-noise">
         /*
          * Classic Perlin noise 3D (GLSL)
@@ -123,7 +123,7 @@
             }
     </script>
     
-    <!-- NEW Sun Core Shader -->
+    <!-- Sun Core Shader -->
     <script type="x-shader/x-vertex" id="coreVertexShader">
         varying vec2 vUv;
         varying vec3 vNormal;
@@ -137,6 +137,7 @@
         varying vec2 vUv;
         varying vec3 vNormal;
         uniform float uTime;
+        uniform float uCoreProximity; // NEW uniform for proximity glow
 
         // Noise code will be injected by JS
 
@@ -146,9 +147,9 @@
 
         void main() {
             // Turbulent noise for the sun's surface
-            float noise = snoise(vec3(vUv * 3.0, uTime * 0.2)); // Slower, larger blobs
-            noise += snoise(vec3(vUv * 10.0, uTime * 0.5)) * 0.5; // Faster, smaller details
-            noise = (noise + 1.0) * 0.5; // map to 0-1
+            float noise = snoise(vec3(vUv * 3.0, uTime * 0.2)); 
+            noise += snoise(vec3(vUv * 10.0, uTime * 0.5)) * 0.5; 
+            noise = (noise + 1.0) * 0.5; 
 
             // Define sun colors
             vec3 colorRed = vec3(1.0, 0.1, 0.0);
@@ -161,12 +162,15 @@
 
             // Add a glowing atmosphere with fresnel
             float atmosphere = fresnel(0.1, 0.9, 7.0);
-            color += colorYellow * atmosphere * 0.8; // Bright yellow glow at the edges
+            color += colorYellow * atmosphere * 0.8; 
 
             // Add bright hot spots
             float hotspots = snoise(vec3(vUv * 5.0, uTime * 0.3));
             hotspots = smoothstep(0.8, 0.85, hotspots);
             color += vec3(1.0, 1.0, 0.5) * hotspots * 0.5;
+
+            // Add proximity glow
+            color += vec3(0.2, 0.15, 0.0) * uCoreProximity; // Subtle orange glow based on proximity
 
             gl_FragColor = vec4(color, 1.0);
         }
@@ -183,190 +187,92 @@
         }
     </script>
 
-    <!-- Terrestrial Planet (About, Philosophy) -->
+    <!-- Terrestrial Planet Shader -->
     <script type="x-shader/x-fragment" id="terrestrialFragmentShader">
         varying vec2 vUv;
         varying vec3 vNormal;
         uniform float uTime;
         uniform float uShine;
-
-        // Noise code will be injected by JS
-
-        float fresnel(float bias, float scale, float power) {
-            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
-        }
-
+        // Noise code injected
+        float fresnel(float b, float s, float p){ return b+s*pow(1.0-dot(vNormal,vec3(0.,0.,1.)),p); }
         void main() {
-            // Base land/water
-            float noise = snoise(vec3(vUv * 5.0, uTime * 0.05));
-            float land = smoothstep(0.45, 0.5, noise);
-            vec3 landColor = vec3(0.2, 0.5, 0.1);
-            vec3 waterColor = vec3(0.1, 0.3, 0.6);
-            vec3 color = mix(waterColor, landColor, land);
-
-            // Clouds
-            float cloudNoise = snoise(vec3(vUv * 3.0, uTime * 0.15));
-            float clouds = smoothstep(0.5, 0.7, cloudNoise);
-            color = mix(color, vec3(1.0), clouds * 0.5);
-
-            // Atmosphere
-            float atmosphere = fresnel(0.1, 0.9, 5.0);
-            color += vec3(0.3, 0.5, 0.8) * atmosphere;
-
-            // Shine effect
-            color += vec3(1.0) * uShine * (0.5 + atmosphere * 0.5);
-
-            gl_FragColor = vec4(color, 1.0);
+            float n=snoise(vec3(vUv*5.,uTime*.05)); float l=smoothstep(.45,.5,n);
+            vec3 lc=vec3(.2,.5,.1); vec3 wc=vec3(.1,.3,.6); vec3 c=mix(wc,lc,l);
+            float cn=snoise(vec3(vUv*3.,uTime*.15)); float cl=smoothstep(.5,.7,cn);
+            c=mix(c,vec3(1.),cl*.5); float a=fresnel(.1,.9,5.); c+=vec3(.3,.5,.8)*a;
+            c+=vec3(1.)*uShine*(.5+a*.5); gl_FragColor=vec4(c,1.);
         }
     </script>
     
-    <!-- Gas Giant Planet (Tech, Projects) -->
+    <!-- Gas Giant Planet Shader -->
     <script type="x-shader/x-fragment" id="gasGiantFragmentShader">
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        uniform float uTime;
-        uniform float uShine;
-
-        // Noise code will be injected by JS
-
-        float fresnel(float bias, float scale, float power) {
-            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
-        }
-
+        varying vec2 vUv; varying vec3 vNormal; uniform float uTime; uniform float uShine;
+        // Noise code injected
+        float fr(float b, float s, float p){ return b+s*pow(1.-dot(vNormal,vec3(0,0,1)),p); }
         void main() {
-            // Swirling bands
-            float noise = snoise(vec3(vUv.y * 10.0, vUv.x * 2.0 + uTime * 0.2, uTime * 0.1));
-            noise = (noise + 1.0) * 0.5; // Map to 0-1
-            
-            vec3 color1 = vec3(0.8, 0.5, 0.2);
-            vec3 color2 = vec3(0.6, 0.3, 0.1);
-            vec3 color3 = vec3(0.9, 0.8, 0.7);
-            
-            vec3 color = mix(color1, color2, smoothstep(0.4, 0.6, noise));
-            color = mix(color, color3, smoothstep(0.7, 0.8, noise));
-
-            // Atmosphere
-            float atmosphere = fresnel(0.1, 0.9, 5.0);
-            color += vec3(0.8, 0.6, 0.4) * atmosphere;
-
-            // Shine effect
-            color += vec3(1.0) * uShine * (0.5 + atmosphere * 0.5);
-
-            gl_FragColor = vec4(color, 1.0);
+            float n=snoise(vec3(vUv.y*10.,vUv.x*2.+uTime*.2,uTime*.1)); n=(n+1.)*.5;
+            vec3 c1=vec3(.8,.5,.2); vec3 c2=vec3(.6,.3,.1); vec3 c3=vec3(.9,.8,.7);
+            vec3 c=mix(c1,c2,smoothstep(.4,.6,n)); c=mix(c,c3,smoothstep(.7,.8,n));
+            float a=fr(.1,.9,5.); c+=vec3(.8,.6,.4)*a; c+=vec3(1.)*uShine*(.5+a*.5);
+            gl_FragColor=vec4(c,1.);
         }
     </script>
     
-    <!-- Rocky Planet (GitHub) -->
+    <!-- Rocky Planet Shader -->
     <script type="x-shader/x-fragment" id="rockyFragmentShader">
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        uniform float uTime;
-        uniform float uShine;
-
-        // Noise code will be injected by JS
-
-        float fresnel(float bias, float scale, float power) {
-            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
-        }
-
-        float rand(vec2 n) { 
-            return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-        }
-
-        float crater(vec2 uv, vec2 pos, float radius) {
-            float d = distance(uv, pos);
-            float rim = smoothstep(radius, radius + 0.02, d);
-            float inside = 1.0 - smoothstep(radius - 0.05, radius, d);
-            return (1.0 - rim) * inside;
-        }
-
-        void main() {
-            // Base rock texture
-            float noise = snoise(vec3(vUv * 15.0, uTime * 0.01));
-            vec3 color = vec3(0.5) + noise * 0.2;
-
-            // Craters
-            float craters = 0.0;
-            for(int i=0; i < 5; i++) {
-                float fi = float(i);
-                vec2 pos = vec2(rand(vec2(fi)), rand(vec2(fi*2.0)));
-                float radius = rand(vec2(fi*3.0)) * 0.1 + 0.05;
-                craters += crater(vUv, pos, radius);
-            }
-            color -= craters * 0.3;
-
-            // Atmosphere (dust)
-            float atmosphere = fresnel(0.05, 0.9, 7.0);
-            color += vec3(0.6, 0.5, 0.4) * atmosphere;
-
-            // Shine effect
-            color += vec3(1.0) * uShine * (0.5 + atmosphere * 0.5);
-
-            gl_FragColor = vec4(color, 1.0);
-        }
+       varying vec2 vUv; varying vec3 vNormal; uniform float uTime; uniform float uShine;
+       // Noise code injected
+       float fr(float b,float s,float p){return b+s*pow(1.-dot(vNormal,vec3(0,0,1)),p);}
+       float R(vec2 n){return fract(sin(dot(n,vec2(12.9898,4.1414)))*43758.5453);}
+       float cr(vec2 uv,vec2 p,float r){float d=distance(uv,p);float rm=smoothstep(r,r+.02,d);float ins=1.-smoothstep(r-.05,r,d);return(1.-rm)*ins;}
+       void main(){float n=snoise(vec3(vUv*15.,uTime*.01));vec3 c=vec3(.5)+n*.2;float crs=0.;for(int i=0;i<5;i++){float fi=float(i);vec2 p=vec2(R(vec2(fi)),R(vec2(fi*2.)));float r=R(vec2(fi*3.))*.1+.05;crs+=cr(vUv,p,r);}c-=crs*.3;float a=fr(.05,.9,7.);c+=vec3(.6,.5,.4)*a;c+=vec3(1.)*uShine*(.5+a*.5);gl_FragColor=vec4(c,1.);}
     </script>
 
-    <!-- NEW Lava Planet Shader (GitHub) -->
+    <!-- Lava Planet Shader -->
     <script type="x-shader/x-fragment" id="lavaFragmentShader">
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        uniform float uTime;
-        uniform float uShine;
-
-        // Noise code will be injected by JS
-
-        float fresnel(float bias, float scale, float power) {
-            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
-        }
-
-        void main() {
-            // Base rock texture
-            float rockNoise = snoise(vec3(vUv * 10.0, uTime * 0.02));
-            vec3 color = vec3(0.1, 0.05, 0.05) + rockNoise * 0.1;
-
-            // Fiery cracks
-            float crackNoise = snoise(vec3(vUv * 5.0, uTime * 0.1));
-            float cracks = smoothstep(0.6, 0.65, crackNoise);
-            cracks *= (1.0 - smoothstep(0.65, 0.8, crackNoise)); // Rim
-            
-            vec3 lavaColor = vec3(1.0, 0.3, 0.0) * (1.0 + (sin(uTime * 5.0 + vUv.x * 10.0) * 0.5 + 0.5));
-            color = mix(color, lavaColor, cracks * (0.5 + uShine * 0.5)); // Cracks glow on shine
-
-            // Atmosphere (heat haze)
-            float atmosphere = fresnel(0.1, 0.9, 5.0);
-            color += vec3(0.8, 0.2, 0.0) * atmosphere * 0.5;
-
-            // Shine effect
-            color += vec3(1.0, 0.5, 0.0) * uShine * 0.5;
-
-            gl_FragColor = vec4(color, 1.0);
-        }
+       varying vec2 vUv; varying vec3 vNormal; uniform float uTime; uniform float uShine;
+       // Noise code injected
+       float fr(float b,float s,float p){return b+s*pow(1.-dot(vNormal,vec3(0,0,1)),p);}
+       void main(){float rn=snoise(vec3(vUv*10.,uTime*.02));vec3 c=vec3(.1,.05,.05)+rn*.1;float cn=snoise(vec3(vUv*5.,uTime*.1));float crk=smoothstep(.6,.65,cn);crk*=(1.-smoothstep(.65,.8,cn));vec3 lc=vec3(1.,.3,0.)*(1.+(sin(uTime*5.+vUv.x*10.)*.5+.5));c=mix(c,lc,crk*(.5+uShine*.5));float a=fr(.1,.9,5.);c+=vec3(.8,.2,0.)*a*.5;c+=vec3(1.,.5,0.)*uShine*.5;gl_FragColor=vec4(c,1.);}
     </script>
     
-    <!-- Planet Ring Shader (Contact) -->
+    <!-- Planet Ring Shader -->
     <script type="x-shader/x-fragment" id="ringFragmentShader">
+       varying vec2 vUv; uniform float uTime;
+       // Noise code injected
+       void main(){float r=vUv.x;float ang=vUv.y*3.14159*2.;float n=snoise(vec3(r*20.,ang*10.,uTime*.1));n=smoothstep(.3,.7,n);float o=(1.-n)*.7;o*=smoothstep(0.,.1,r);o*=(1.-smoothstep(.9,1.,r));gl_FragColor=vec4(.8,.75,.7,o*.5);}
+    </script>
+
+    <!-- NEW Nebula Shader -->
+     <script type="x-shader/x-vertex" id="nebulaVertexShader">
         varying vec2 vUv;
-        uniform float uTime;
-
-        // Noise code will be injected by JS
-
         void main() {
-            // vUv.x is the radial coordinate (0 at center, 1 at edge)
-            float radial = vUv.x;
-            float angle = vUv.y * 3.14159 * 2.0;
-
-            // Create ring patterns using noise
-            float noise = snoise(vec3(radial * 20.0, angle * 10.0, uTime * 0.1));
-            noise = smoothstep(0.3, 0.7, noise);
-
-            // Fade in/out at edges
-            float opacity = (1.0 - noise) * 0.7;
-            opacity *= smoothstep(0.0, 0.1, radial); // Fade in from center
-            opacity *= (1.0 - smoothstep(0.9, 1.0, radial)); // Fade out at edge
-            
-            gl_FragColor = vec4(0.8, 0.75, 0.7, opacity * 0.5);
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
     </script>
+    <script type="x-shader/x-fragment" id="nebulaFragmentShader">
+        varying vec2 vUv;
+        uniform float uTime;
+        uniform vec3 uColor1;
+        uniform vec3 uColor2;
+        // Noise code injected
+        void main() {
+            float noise = snoise(vec3(vUv * 1.5, uTime * 0.02)); // Slow, large scale noise
+            noise += snoise(vec3(vUv * 5.0, uTime * 0.05)) * 0.3; // Smaller details
+            noise = (noise + 1.0) * 0.5; // Map to 0-1
+
+            vec3 color = mix(uColor1, uColor2, smoothstep(0.4, 0.6, noise));
+            
+            float alpha = smoothstep(0.3, 0.7, noise) * 0.3; // Control density/alpha
+             // Fade edges softly
+            float edgeFade = smoothstep(0.0, 0.2, vUv.x) * (1.0 - smoothstep(0.8, 1.0, vUv.x));
+            edgeFade *= smoothstep(0.0, 0.2, vUv.y) * (1.0 - smoothstep(0.8, 1.0, vUv.y));
+
+            gl_FragColor = vec4(color, alpha * edgeFade * 0.5); // Make it quite faint overall
+        }
+    </script>
+
 
     <!--
     ================================================================
@@ -381,7 +287,6 @@
             --secondary-text: #E0E0E0;
             --card-bg: #1A1A1A;
             --border-color: rgba(212, 175, 55, 0.2);
-            --cursor-color: #D4AF37;
         }
         html, body { 
             scroll-behavior: smooth;
@@ -389,11 +294,10 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            overflow: hidden; /* No scrolling on the body */
-             /* Hide OS cursor - Use PNG approach */
+            overflow: hidden; 
              cursor: none !important; 
         }
-        /* Hide OS cursor for interactive elements too */
+        /* Hide OS cursor for interactive elements */
         a, button, input, textarea, select, label,
         .project-card, .tech-card, .github-card, 
         .contact-icon-link, .filter-btn, .modal-close-btn, #mute-btn,
@@ -403,141 +307,101 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color); /* Fallback color */
-            /* Background GIF */
+            background-color: var(--bg-color); 
             background-image: url('https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Space.gif');
             background-size: cover;
             background-position: center center;
             background-repeat: no-repeat;
             color: var(--secondary-text);
-            position: relative; /* Needed for the overlay */
+            position: relative; 
         }
-        /* Background GIF Overlay */
         body::before {
             content: "";
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.75); /* Adjust opacity (0.75 = 75% black) */
-            z-index: -1; /* Place behind content, but above background-image */
+            background-color: rgba(0, 0, 0, 0.75); 
+            z-index: -1; 
         }
-        body.loading {
-            overflow: hidden;
-        }
+        body.loading { overflow: hidden; }
 
         #main-canvas { 
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: transparent; /* Make canvas transparent */
-            z-index: 1; /* Ensure canvas is above the body pseudo-element */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: transparent; 
+            z-index: 1; 
         }
         
-        /* NEW: Custom Cursor Styles */
+        /* Custom Cursor Styles */
         #custom-cursor {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 9999; /* Ensure it's on top */
-            pointer-events: none; /* Make it ignore mouse events */
-            mix-blend-mode: difference; /* Optional: cool blend effect */
-            transform: translate(-50%, -50%); /* Center the cursor image */
-            transition: opacity 0.3s, transform 0.1s ease-out;
-            opacity: 0; /* Hidden initially */
+            position: fixed; top: 0; left: 0; z-index: 9999; 
+            pointer-events: none; 
+            mix-blend-mode: difference; /* Nice effect, adjust if needed */
+            transform: translate(-50%, -50%); 
+            transition: opacity 0.3s, transform 0.05s linear; /* Faster tracking */
+            opacity: 0; 
         }
         #custom-cursor img {
-             width: 32px; /* ADJUST THIS VALUE for desired size */
-             height: 32px; /* ADJUST THIS VALUE for desired size */
-             display: block; /* Remove extra space below image */
+             width: 32px; /* Default size */
+             height: 32px; /* Default size */
+             display: block; 
+             transition: transform 0.2s ease-out; /* Smooth scale transition */
         }
-        #custom-cursor .cursor-pointer { display: none; } /* Hide hand initially */
-        #custom-cursor.hover .cursor-default { display: none; } /* Hide head on hover */
-        #custom-cursor.hover .cursor-pointer { display: block; } /* Show hand on hover */
+        #custom-cursor .cursor-pointer { display: none; } 
+        #custom-cursor.hover .cursor-default { display: none; } 
+        #custom-cursor.hover .cursor-pointer { display: block; } 
+        #custom-cursor.clicked img { transform: scale(0.8); } /* Click effect */
 
 
         .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
+            position: fixed; top: 0; left: 0; width: 100%;
             background-color: rgba(16, 16, 16, 0.7);
             backdrop-filter: blur(12px);
             z-index: 100;
         }
-        .font-serif {
-            font-family: 'DM Serif Display', serif;
-        }
-        .nav-link {
-            transition: color 0.3s;
-        }
-        .nav-link:hover, .nav-link.active { 
-            color: var(--primary-accent); 
-        }
+        .font-serif { font-family: 'DM Serif Display', serif; }
+        .nav-link { transition: color 0.3s; }
+        .nav-link:hover, .nav-link.active { color: var(--primary-accent); }
         .resume-btn {
-            border: 1px solid var(--primary-accent);
-            color: var(--primary-accent);
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
+            border: 1px solid var(--primary-accent); color: var(--primary-accent);
+            padding: 0.3rem 0.8rem; border-radius: 9999px;
             transition: all 0.3s ease;
         }
-        .resume-btn:hover {
-            background-color: var(--primary-accent);
-            color: var(--bg-color);
-        }
+        .resume-btn:hover { background-color: var(--primary-accent); color: var(--bg-color); }
 
-        /* Full Screen Content Panels */
+        /* Content Panels */
         .content-panel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(16, 16, 16, 0.9);
-            backdrop-filter: blur(10px);
-            z-index: 50;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.5s ease-in-out;
-            overflow-y: auto;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(16, 16, 16, 0.9); backdrop-filter: blur(10px);
+            z-index: 50; opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease-in-out; overflow-y: auto;
         }
-        .content-panel.active {
-            opacity: 1;
-            pointer-events: all;
-        }
+        .content-panel.active { opacity: 1; pointer-events: all; }
         .content-wrapper {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 8rem 2rem 4rem 2rem;
+            max-width: 1200px; margin: 0 auto;
+            padding: 6rem 1rem 4rem 1rem; /* Mobile first padding */
         }
-         @media (max-width: 768px) { .content-wrapper { padding: 6rem 1rem 4rem 1rem; } }
+         @media (min-width: 768px) { .content-wrapper { padding: 8rem 2rem 4rem 2rem; } }
 
 
         .section-head { 
-            font-family: 'DM Serif Display', serif;
-            color: #fff; 
-            font-weight: 700; 
-            overflow: hidden;
+            font-family: 'DM Serif Display', serif; color: #fff; font-weight: 700; 
+            overflow: hidden; font-size: 2.5rem; /* Base mobile size */
         }
-        .section-head .char {
-            transform: translateY(115%);
-            transition: transform .5s;
-        }
+         @media (min-width: 640px) { .section-head { font-size: 3.75rem; } } /* sm */
+         @media (min-width: 1024px) { .section-head { font-size: 4.5rem; } } /* lg */
+
+        .section-head .char { transform: translateY(115%); transition: transform .5s; }
         .section-subhead { 
-            color: var(--primary-accent);
-            text-transform: uppercase; 
-            letter-spacing: 2px;
-            font-weight: 500;
+            color: var(--primary-accent); text-transform: uppercase; 
+            letter-spacing: 2px; font-weight: 500; font-size: 0.875rem; /* Base size */
         }
+         @media (min-width: 768px) { .section-subhead { font-size: 1rem; } } /* md */
         
         .project-card, .experience-card, .tech-card, .github-card {
-            background: var(--card-bg);
-            transition: all 0.4s ease;
+            background: var(--card-bg); transition: all 0.4s ease;
             border: 1px solid var(--border-color);
         }
         .project-card:hover, .tech-card:hover, .github-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--primary-accent);
+            transform: translateY(-8px); border-color: var(--primary-accent);
             box-shadow: 0 15px 40px rgba(0,0,0,0.5);
         }
 
@@ -548,69 +412,73 @@
         }
 
         .timeline { position: relative; max-width: 1200px; margin: 0 auto; }
-        .timeline::after { content: ''; position: absolute; width: 2px; background-color: var(--border-color); top: 0; bottom: 0; left: 50%; margin-left: -1px; }
-        .timeline-container { padding: 10px 40px; position: relative; background-color: inherit; width: 50%; }
-        .timeline-container.left { left: 0; }
-        .timeline-container.right { left: 50%; }
-        .timeline-container::after { content: ''; position: absolute; width: 18px; height: 18px; right: -9px; background-color: var(--bg-color); border: 2px solid var(--primary-accent); top: 25px; border-radius: 50%; z-index: 1; }
-        .timeline-container.right::after { left: -9px; }
-        .timeline-content { padding: 20px 30px; background: var(--card-bg); /* Updated background */ position: relative; border-radius: 8px; border: 1px solid var(--border-color); }
-
-        @media screen and (max-width: 768px) {
-            .timeline::after { left: 31px; }
-            .timeline-container { width: 100%; padding-left: 70px; padding-right: 25px; }
-            .timeline-container.right { left: 0%; }
-            .timeline-container.left::after, .timeline-container.right::after { left: 22px; }
+        .timeline::after { content: ''; position: absolute; width: 2px; background-color: var(--border-color); top: 0; bottom: 0; left: 31px; margin-left: -1px; } /* Mobile first: line on left */
+        .timeline-container { padding: 10px 0 10px 50px; position: relative; background-color: inherit; width: 100%; } /* Mobile: full width */
+        .timeline-container.left, .timeline-container.right { left: 0; } /* Mobile: reset positioning */
+        .timeline-container::after { content: ''; position: absolute; width: 18px; height: 18px; left: 22px; background-color: var(--bg-color); border: 2px solid var(--primary-accent); top: 25px; border-radius: 50%; z-index: 1; } /* Mobile: dot on left */
+        .timeline-container.right::after { left: 22px; } /* Mobile: ensure right also has dot on left */
+        .timeline-content { padding: 15px 20px; background: var(--card-bg); position: relative; border-radius: 8px; border: 1px solid var(--border-color); } /* Slightly smaller padding */
+         @media (min-width: 768px) { /* Desktop timeline adjustments */
+            .timeline::after { left: 50%; }
+            .timeline-container { padding: 10px 40px; width: 50%; }
+            .timeline-container.left { left: 0; }
+            .timeline-container.right { left: 50%; }
+            .timeline-container.left::after { right: -9px; left: auto; } /* Desktop: dot in middle */
+            .timeline-container.right::after { left: -9px; } /* Desktop: dot in middle */
+            .timeline-content { padding: 20px 30px; }
         }
 
         .gsap-reveal { opacity: 0; transform: translateY(40px); }
         .contact-icon-link {
             display: flex; justify-content: center; align-items: center;
-            width: 64px; height: 64px;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            transition: all 0.3s ease;
+            width: 50px; height: 50px; /* Smaller on mobile */
+            background-color: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 50%; transition: all 0.3s ease;
         }
+         @media (min-width: 768px) { .contact-icon-link { width: 64px; height: 64px; } } /* md */
         .contact-icon-link:hover { transform: scale(1.1); background-color: var(--primary-accent); border-color: var(--primary-accent); }
-        .contact-icon-link:hover svg {
-             color: #101010;
-        }
+        .contact-icon-link svg { width: 1.5rem; height: 1.5rem; color: #E0E0E0; transition: color 0.3s; } /* Adjust size/color */
+         @media (min-width: 768px) { .contact-icon-link svg { width: 2rem; height: 2rem; } } /* md */
+        .contact-icon-link:hover svg { color: #101010; }
 
         #project-modal, #tech-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 100;
             display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease; padding: 1rem; /* Padding for mobile */
         }
         #project-modal.active, #tech-modal.active { opacity: 1; pointer-events: all; }
         
         .modal-content {
             background: var(--card-bg); border: 1px solid var(--border-color);
-            border-radius: 8px; width: 90%; max-width: 900px; max-height: 90vh;
+            border-radius: 8px; width: 100%; max-width: 900px; max-height: 90vh; /* Adjust max-width */
             overflow-y: auto; transform: scale(0.95); transition: transform 0.4s ease;
         }
+         @media (min-width: 768px) { .modal-content { width: 90%; } } /* Wider on desktop */
+
         #project-modal.active .modal-content, #tech-modal.active .modal-content { transform: scale(1); }
         
         .modal-close-btn {
-            position: absolute; top: 1.5rem; right: 1.5rem; color: white;
+            position: absolute; top: 1rem; right: 1rem; color: white; /* Closer for mobile */
             transition: color 0.3s, transform 0.3s;
-            z-index: 110; /* Above modal content */
+            z-index: 110; 
         }
+         @media (min-width: 768px) { .modal-close-btn { top: 1.5rem; right: 1.5rem; } } /* md */
         .modal-close-btn:hover { color: var(--primary-accent); transform: rotate(90deg); }
 
         .filter-btn {
             background-color: transparent; border: 1px solid var(--border-color);
-            color: var(--secondary-text); padding: 0.5rem 1.5rem; border-radius: 9999px;
-            transition: all 0.3s ease; font-weight: 500;
+            color: var(--secondary-text); padding: 0.5rem 1rem; border-radius: 9999px; /* Smaller padding */
+            transition: all 0.3s ease; font-weight: 500; font-size: 0.875rem; /* Smaller text */
         }
+         @media (min-width: 768px) { .filter-btn { padding: 0.5rem 1.5rem; font-size: 1rem; } } /* md */
         .filter-btn:hover { background-color: rgba(212, 175, 55, 0.1); border-color: var(--primary-accent); color: white; }
         .filter-btn.active { background-color: var(--primary-accent); color: var(--bg-color); border-color: var(--primary-accent); }
         
         #preloader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg-color); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; /* Stack orb and text */ justify-content: center; align-items: center; gap: 1rem; /* Space between */
         }
         .loader-orb {
             width: 50px; height: 50px; border-radius: 50%;
@@ -618,75 +486,78 @@
             box-shadow: 0 0 20px var(--primary-accent), 0 0 40px var(--primary-accent);
             animation: pulse 2s infinite ease-in-out;
         }
+        /* NEW: Preloader text */
+        #preloader p {
+            color: var(--secondary-text);
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
         @keyframes pulse { 0%, 100% { transform: scale(0.8); opacity: 0.7; } 50% { transform: scale(1); opacity: 1; } }
         
         #mute-btn {
-            position: fixed; 
-            bottom: 1.25rem;
-            right: 1.25rem; 
-            z-index: 1000;
-            background: rgba(255,255,255,0.1); padding: 0.5rem; border-radius: 50%;
+            position: fixed; bottom: 1rem; right: 1rem; /* Closer for mobile */
+            z-index: 1000; background: rgba(255,255,255,0.1); 
+            padding: 0.4rem; border-radius: 50%; /* Slightly smaller */
             transition: background-color 0.3s;
         }
+         @media (min-width: 768px) { #mute-btn { bottom: 1.25rem; right: 1.25rem; padding: 0.5rem; } } /* md */
         #mute-btn:hover { background: rgba(255,255,255,0.2); }
+         #mute-btn svg { width: 1.25rem; height: 1.25rem; } /* Smaller icon */
+         @media (min-width: 768px) { #mute-btn svg { width: 1.5rem; height: 1.5rem; } } /* md */
+
 
         .tech-card img {
-            filter: grayscale(100%) opacity(0.7);
-            transition: filter 0.4s ease;
+            filter: grayscale(100%) opacity(0.7); transition: filter 0.4s ease;
         }
-        .tech-card:hover img {
-            filter: grayscale(0%) opacity(1);
-        }
+        .tech-card:hover img { filter: grayscale(0%) opacity(1); }
         .tech-card .tech-name {
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.4s ease;
+            opacity: 0; transform: translateY(10px); transition: all 0.4s ease;
         }
-        .tech-card:hover .tech-name {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .tech-card:hover .tech-name { opacity: 1; transform: translateY(0); }
 
     </style>
 </head>
 <body class="relative loading">
 
-    <div id="preloader"><div class="loader-orb"></div></div>
+    <div id="preloader">
+        <div class="loader-orb"></div>
+        <p>Loading Universe...</p> <!-- Added text -->
+    </div>
     
-    <!-- NEW: Custom Cursor Structure -->
+    <!-- Custom Cursor Structure -->
     <div id="custom-cursor">
         <img src="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/cursor/Star%20Wars%20C-3PO--pointer--SweezyCursors.png" alt="Default Cursor" class="cursor-default">
         <img src="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/cursor/Star%20Wars%20C-3PO--cursor--SweezyCursors.png" alt="Pointer Cursor" class="cursor-pointer">
     </div>
 
     <button id="mute-btn">
-        <svg id="sound-on-icon" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707a1 1 0 011.414 0v14a1 1 0 01-1.414 0L5.586 15z"></path></svg>
-        <svg id="sound-off-icon" class="w-6 h-6 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707a1 1 0 011.414 0v14a1 1 0 01-1.414 0L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+        <svg id="sound-on-icon" class="text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707a1 1 0 011.414 0v14a1 1 0 01-1.414 0L5.586 15z"></path></svg>
+        <svg id="sound-off-icon" class="text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707a1 1 0 011.414 0v14a1 1 0 01-1.414 0L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
     </button>
 
-    <header class="header fixed top-0 left-0 w-full z-20 px-4 sm:px-8 py-5">
+    <header class="header fixed top-0 left-0 w-full z-20 px-4 sm:px-8 py-3 md:py-5"> <!-- Adjusted padding -->
         <div class="w-full flex justify-between items-center max-w-7xl mx-auto">
-            <a href="#" class="nav-link text-white text-2xl font-serif font-bold" data-target="home">
+            <a href="#" class="nav-link text-white text-xl md:text-2xl font-serif font-bold" data-target="home"> <!-- Adjusted size -->
                 Monish V
             </a>
-            <nav id="desktop-nav" class="hidden md:flex items-center list-none gap-8">
-                <a href="#about" class="nav-link text-lg font-medium" data-target="about">About</a>
-                <a href="#philosophy" class="nav-link text-lg font-medium" data-target="philosophy">Philosophy</a>
-                <a href="#experience" class="nav-link text-lg font-medium" data-target="experience">Experience</a>
-                <a href="#github-stats" class="nav-link text-lg font-medium" data-target="github-stats">GitHub</a>
-                <a href="#tech" class="nav-link text-lg font-medium" data-target="tech">Tech</a>
-                <a href="#projects" class="nav-link text-lg font-medium" data-target="projects">Projects</a>
-                <a href="#contact" class="nav-link text-lg font-medium" data-target="contact">Contact</a>
-                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-lg font-medium">Download Resume</a>
+            <nav id="desktop-nav" class="hidden md:flex items-center list-none gap-6 lg:gap-8"> <!-- Adjusted gap -->
+                <a href="#about" class="nav-link text-base lg:text-lg font-medium" data-target="about">About</a> <!-- Adjusted size -->
+                <a href="#philosophy" class="nav-link text-base lg:text-lg font-medium" data-target="philosophy">Philosophy</a>
+                <a href="#experience" class="nav-link text-base lg:text-lg font-medium" data-target="experience">Experience</a>
+                <a href="#github-stats" class="nav-link text-base lg:text-lg font-medium" data-target="github-stats">GitHub</a>
+                <a href="#tech" class="nav-link text-base lg:text-lg font-medium" data-target="tech">Tech</a>
+                <a href="#projects" class="nav-link text-base lg:text-lg font-medium" data-target="projects">Projects</a>
+                <a href="#contact" class="nav-link text-base lg:text-lg font-medium" data-target="contact">Contact</a>
+                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-sm lg:text-lg font-medium ml-2">Download Resume</a> <!-- Adjusted size -->
             </nav>
             <div class="md:hidden flex items-center">
                 <button id="mobile-menu-button" class="text-white focus:outline-none z-30">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg> <!-- Slightly smaller icon -->
                 </button>
             </div>
         </div>
         <div id="mobile-menu" class="hidden md:hidden absolute top-full left-0 w-full bg-black bg-opacity-95 backdrop-blur-sm">
-            <div class="flex flex-col items-center py-4 space-y-4">
+            <div class="flex flex-col items-center py-4 space-y-3"> <!-- Reduced spacing -->
                 <a href="#about" class="nav-link mobile-nav-link text-lg font-medium" data-target="about">About</a>
                 <a href="#philosophy" class="nav-link mobile-nav-link text-lg font-medium" data-target="philosophy">Philosophy</a>
                 <a href="#experience" class="nav-link mobile-nav-link text-lg font-medium" data-target="experience">Experience</a>
@@ -701,148 +572,129 @@
 
     <canvas id="main-canvas"></canvas>
 
-    <div id="home-content" class="absolute inset-0 flex justify-center items-center z-10 pointer-events-none">
+    <div id="home-content" class="absolute inset-0 flex justify-center items-center z-10 pointer-events-none px-4"> <!-- Added padding -->
         <div class="text-center">
-            <h1 class="font-serif text-white font-bold text-6xl sm:text-7xl lg:text-8xl lg:leading-tight">
+            <h1 class="font-serif text-white font-bold text-5xl sm:text-7xl lg:text-8xl lg:leading-tight"> <!-- Adjusted mobile size -->
                 Monish V
             </h1>
-            <p class="text-gray-300 font-light text-lg sm:text-xl lg:text-2xl mt-4 max-w-2xl mx-auto">
+            <p class="text-gray-300 font-light text-lg sm:text-xl lg:text-2xl mt-3 md:mt-4 max-w-xs sm:max-w-2xl mx-auto"> <!-- Adjusted margin/max-width -->
                 Architect of Intelligent Systems & Digital Experiences
             </p>
         </div>
     </div>
 
-    <!-- All content panels are now hidden by default -->
+    <!-- Content Panels (Adjusted padding/sizes inside content-wrapper and specific elements) -->
     <div id="about" class="content-panel">
         <div class="content-wrapper">
              <div class="gsap-reveal">
-                <p class="section-subhead text-lg">Introduction</p>
-                <h2 class="section-head text-5xl sm:text-6xl lg:text-7xl">Overview.</h2>
+                <p class="section-subhead">Introduction</p>
+                <h2 class="section-head">Overview.</h2>
             </div>
-            <p class="mt-8 text-lg md:text-xl max-w-4xl leading-relaxed gsap-reveal">
+            <p class="mt-6 md:mt-8 text-base md:text-xl max-w-4xl leading-relaxed gsap-reveal"> <!-- Adjusted text size/margin -->
                 I am a versatile developer with a passion for building intelligent, data-driven solutions at the intersection of AI/ML and full-stack engineering. My work focuses on transforming complex problems into elegant, efficient, and scalable applications. As a collaborative and curious learner, I'm driven to architect systems that are not only functional but also deliver a premium user experience. Let's create something extraordinary.
             </p>
         </div>
-        <button class="modal-close-btn content-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <button class="modal-close-btn content-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button> <!-- Adjusted size -->
     </div>
     
     <div id="philosophy" class="content-panel">
-         <div class="content-wrapper flex items-center">
+         <div class="content-wrapper flex items-center justify-center"> <!-- Added justify center -->
             <div class="gsap-reveal text-center max-w-3xl mx-auto">
-                <p class="section-subhead text-lg">My Philosophy</p>
-                <blockquote class="mt-4 text-white text-2xl md:text-3xl font-serif italic">
+                <p class="section-subhead">My Philosophy</p>
+                <blockquote class="mt-4 text-white text-xl md:text-3xl font-serif italic"> <!-- Adjusted size -->
                     "I believe in building applications that not only solve complex, real-world problems, but do so in a way that is accessible, intuitive, and genuinely helpful to people."
                 </blockquote>
             </div>
         </div>
-        <button class="modal-close-btn content-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <button class="modal-close-btn content-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
 
     <div id="experience" class="content-panel">
         <div class="content-wrapper">
             <div class="gsap-reveal text-center">
-                <p class="section-subhead text-lg">Chronology</p>
-                <h2 class="section-head text-5xl sm:text-6xl lg:text-7xl">Experience.</h2>
+                <p class="section-subhead">Chronology</p>
+                <h2 class="section-head">Experience.</h2>
             </div>
-            <div id="experience-container" class="timeline mt-20"></div>
+            <div id="experience-container" class="timeline mt-12 md:mt-20"></div> <!-- Adjusted margin -->
         </div>
-        <button class="modal-close-btn content-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <button class="modal-close-btn content-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
     
     <div id="github-stats" class="content-panel">
         <div class="content-wrapper">
              <div class="gsap-reveal text-center">
-                <p class="section-subhead text-lg">Live from GitHub</p>
-                <h2 class="section-head text-5xl sm:text-6xl lg:text-7xl">Activity.</h2>
+                <p class="section-subhead">Live from GitHub</p>
+                <h2 class="section-head">Activity.</h2>
             </div>
-            <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <div class="github-card p-8 rounded-2xl text-center gsap-reveal">
-                    <h3 class="text-white text-4xl font-bold" id="repo-count">...</h3>
-                    <p class="text-secondary-text mt-2">Public Repositories</p>
+            <div class="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto"> <!-- Adjusted margin/gap -->
+                <div class="github-card p-6 md:p-8 rounded-2xl text-center gsap-reveal"> <!-- Adjusted padding -->
+                    <h3 class="text-white text-3xl md:text-4xl font-bold" id="repo-count">...</h3> <!-- Adjusted size -->
+                    <p class="text-secondary-text mt-2 text-sm md:text-base">Public Repositories</p> <!-- Adjusted size -->
                 </div>
-                <div class="github-card p-8 rounded-2xl text-center gsap-reveal">
-                    <h3 class="text-white text-4xl font-bold" id="star-count">...</h3>
-                    <p class="text-secondary-text mt-2">Total Stars</p>
+                <div class="github-card p-6 md:p-8 rounded-2xl text-center gsap-reveal">
+                    <h3 class="text-white text-3xl md:text-4xl font-bold" id="star-count">...</h3>
+                    <p class="text-secondary-text mt-2 text-sm md:text-base">Total Stars</p>
                 </div>
             </div>
-            <!-- NEW: GitHub Profile Link -->
-            <div class="mt-12 text-center gsap-reveal">
-                <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="inline-block bg-transparent border border-[var(--primary-accent)] text-[var(--primary-accent)] font-bold py-3 px-8 rounded-full text-lg transition-all hover:scale-105 hover:bg-[var(--primary-accent)] hover:text-black">
+            <div class="mt-10 md:mt-12 text-center gsap-reveal">
+                <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="inline-block bg-transparent border border-[var(--primary-accent)] text-[var(--primary-accent)] font-bold py-2 px-6 md:py-3 md:px-8 rounded-full text-base md:text-lg transition-all hover:scale-105 hover:bg-[var(--primary-accent)] hover:text-black"> <!-- Adjusted padding/size -->
                     View My GitHub Profile
                 </a>
             </div>
         </div>
-        <button class="modal-close-btn content-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <button class="modal-close-btn content-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
 
     <div id="tech" class="content-panel">
          <div class="content-wrapper">
             <div class="gsap-reveal text-center">
-                 <h2 class="section-head text-5xl sm:text-6xl lg:text-7xl">Technologies.</h2>
+                 <h2 class="section-head">Technologies.</h2>
             </div>
-            <div id="tech-icons-container" class="mt-20 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8"></div>
+            <!-- Adjusted grid cols for better mobile layout -->
+            <div id="tech-icons-container" class="mt-12 md:mt-20 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 md:gap-8"></div> 
         </div>
-        <button class="modal-close-btn content-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <button class="modal-close-btn content-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
 
     <div id="projects" class="content-panel">
         <div class="content-wrapper">
             <div class="gsap-reveal text-center">
-                <p class="section-subhead text-lg">Case Studies</p>
-                <h2 class="section-head text-5xl sm:text-6xl lg:text-7xl">Projects.</h2>
+                <p class="section-subhead">Case Studies</p>
+                <h2 class="section-head">Projects.</h2>
             </div>
              <div class="w-full flex flex-col items-center gsap-reveal">
-                <p class="mt-6 text-lg text-secondary-text max-w-3xl text-center">
+                <p class="mt-4 md:mt-6 text-base md:text-lg text-secondary-text max-w-3xl text-center"> <!-- Adjusted size/margin -->
                     My projects demonstrate my skills through real-world examples. Use the filters below to navigate through my work in different domains.
                 </p>
-                <div id="project-filters" class="mt-8 flex flex-wrap gap-4 justify-center">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="ai">AI/ML</button>
-                    <button class="filter-btn" data-filter="web">Web Dev</button>
-                    <button class="filter-btn" data-filter="software">Software</button>
-                    <button class="filter-btn" data-filter="game">Game Dev</button>
-                </div>
+                <div id="project-filters" class="mt-6 md:mt-8 flex flex-wrap gap-3 md:gap-4 justify-center"></div> <!-- Adjusted margin/gap -->
             </div>
-            <div id="projects-container" class="mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            <div id="projects-container" class="mt-12 md:mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"></div> <!-- Adjusted margin/gap -->
         </div>
-        <button class="modal-close-btn content-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <button class="modal-close-btn content-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
     
     <div id="contact" class="content-panel">
         <div class="content-wrapper">
-            <div class="gsap-reveal bg-[var(--card-bg)] p-8 md:p-12 rounded-2xl max-w-4xl mx-auto text-center">
-                <p class="section-subhead text-lg">Connect</p>
-                <h3 class="section-head text-5xl sm:text-6xl lg:text-7xl">Get in Touch.</h3>
-                <p class="mt-6 text-lg">I'm currently open to new opportunities and collaborations. Feel free to reach out.</p>
-                <div id="contact-icons" class="mt-12 flex items-center justify-center gap-8">
-                    <a href="mailto:monishv217@gmail.com" class="contact-icon-link rounded-full p-4" aria-label="Email Monish">
-                        <svg class="w-8 h-8 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
-                    </a>
-                    <a href="tel:+919345993268" class="contact-icon-link rounded-full p-4" aria-label="Call Monish">
-                         <svg class="w-8 h-8 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.211-.992-.55-1.34L20.07 15.636a2.25 2.25 0 00-3.182 0l-1.97 1.97-1.56-1.56a11.25 11.25 0 01-6.176-6.176l1.56-1.56 1.97-1.97a2.25 2.25 0 000-3.182L6.841 3.9a2.25 2.25 0 00-1.34-.55H4.125A2.25 2.25 0 001.875 5.625v1.125z" /></svg>
-                    </a>
-                    <a href="https://github.com/Monish21072004" target="_blank" rel="noopener noreferrer" class="contact-icon-link rounded-full p-4" aria-label="Monish's GitHub Profile">
-                       <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.026 2.747-1.026.546 1.379.202 2.398.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12.017C22 6.484 17.523 2 12 2z" clip-rule="evenodd" /></svg>
-                    </a>
-                </div>
+            <div class="gsap-reveal bg-[var(--card-bg)] p-6 md:p-12 rounded-2xl max-w-4xl mx-auto text-center"> <!-- Adjusted padding -->
+                <p class="section-subhead">Connect</p>
+                <h3 class="section-head">Get in Touch.</h3>
+                <p class="mt-4 md:mt-6 text-base md:text-lg">I'm currently open to new opportunities and collaborations. Feel free to reach out.</p> <!-- Adjusted size/margin -->
+                <div id="contact-icons" class="mt-8 md:mt-12 flex items-center justify-center gap-6 md:gap-8"></div> <!-- Adjusted margin/gap -->
             </div>
         </div>
-        <button class="modal-close-btn content-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <button class="modal-close-btn content-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
     </div>
 
     <!-- Project Modal -->
     <div id="project-modal" class="modal">
         <div class="modal-content">
-            <button class="modal-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            <img id="modal-project-image" src="" alt="Project Image" class="w-full h-64 object-cover rounded-t-lg">
-            <div class="p-6 md:p-8">
-                <h3 id="modal-project-title" class="text-white font-bold text-3xl"></h3>
-                <div id="modal-project-tags" class="mt-4 flex flex-wrap gap-x-4 gap-y-1"></div>
-                <p id="modal-project-desc" class="mt-4 text-gray-300 leading-relaxed"></p>
-                <div class="mt-6 flex flex-wrap gap-4">
-                    <a id="modal-project-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-block bg-[var(--primary-accent)] text-black font-bold py-2 px-6 rounded-md transition-transform hover:scale-105">View on GitHub</a>
-                    <a id="modal-project-demo-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-block bg-transparent border border-[var(--primary-accent)] text-[var(--primary-accent)] font-bold py-2 px-6 rounded-md transition-all hover:scale-105 hover:bg-[var(--primary-accent)] hover:text-black">Live Demo</a>
-                </div>
+            <button class="modal-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <img id="modal-project-image" src="" alt="Project Image" class="w-full h-48 sm:h-64 object-cover rounded-t-lg"> <!-- Adjusted height -->
+            <div class="p-4 sm:p-6 md:p-8"> <!-- Adjusted padding -->
+                <h3 id="modal-project-title" class="text-white font-bold text-2xl md:text-3xl"></h3> <!-- Adjusted size -->
+                <div id="modal-project-tags" class="mt-3 md:mt-4 flex flex-wrap gap-x-3 md:gap-x-4 gap-y-1"></div> <!-- Adjusted margin/gap -->
+                <p id="modal-project-desc" class="mt-3 md:mt-4 text-gray-300 leading-relaxed text-sm md:text-base"></p> <!-- Adjusted size/margin -->
+                <div class="mt-4 md:mt-6 flex flex-wrap gap-3 md:gap-4"></div> <!-- Adjusted margin/gap -->
             </div>
         </div>
     </div>
@@ -850,11 +702,11 @@
     <!-- Tech Modal -->
     <div id="tech-modal" class="modal">
         <div class="modal-content">
-            <button class="modal-close-btn"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <button class="modal-close-btn"><svg class="w-7 h-7 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             <div class="p-6 md:p-8 flex flex-col items-center text-center">
-                <img id="modal-tech-image" src="" alt="Tech Image" class="w-32 h-32 object-contain">
-                <h3 id="modal-tech-title" class="text-white font-bold text-3xl mt-4"></h3>
-                <p id="modal-tech-desc" class="mt-4 text-gray-300 leading-relaxed max-w-md"></p>
+                <img id="modal-tech-image" src="" alt="Tech Image" class="w-24 h-24 md:w-32 md:h-32 object-contain"> <!-- Adjusted size -->
+                <h3 id="modal-tech-title" class="text-white font-bold text-2xl md:text-3xl mt-4"></h3> <!-- Adjusted size -->
+                <p id="modal-tech-desc" class="mt-3 md:mt-4 text-gray-300 leading-relaxed max-w-md text-sm md:text-base"></p> <!-- Adjusted size/margin -->
             </div>
         </div>
     </div>
@@ -870,75 +722,60 @@
 
             const clock = new THREE.Clock();
             const mouse = new THREE.Vector2();
-            const customCursor = document.getElementById('custom-cursor'); // Re-added custom cursor element
+            const customCursor = document.getElementById('custom-cursor'); 
             let soundsReady = false;
             let isMuted = true;
             let mainScene, mainCamera, mainRenderer, raycaster, controls;
             let hoveredNode = null;
-            const navNodes = []; // Will store the planet groups
-            const homePosition = new THREE.Vector3(0, 5, 25); // Raised camera angle
+            const navNodes = []; 
+            const homePosition = new THREE.Vector3(0, 5, 25); 
             const accentColor = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--primary-accent'));
-            let coreGroup, sunCore, wireframeCore; // To hold the AI core components
-            let coreBeat = { intensity: 1.0 }; // Start intensity at 1.0 for scaling
+            let coreGroup, sunCore, wireframeCore; 
+            let coreBeat = { intensity: 1.0 }; 
             let lastMousePos = { x: 0, y: 0 }; 
+            let nebulaPlane; // For nebula effect
+
+            // --- JS Smoothstep function ---
+             function smoothstep(edge0, edge1, x) {
+                // Scale, bias and saturate x to 0..1 range
+                x = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+                // Evaluate polynomial
+                return x * x * (3 - 2 * x);
+            }
            
-            // --- IMPROVED SOUND DESIGN (Space Theme) ---
-            const reverb = new Tone.Freeverb({
-                roomSize: 0.7,
-                dampening: 4000
-            }).toDestination();
-            
+            // --- SOUND DESIGN ---
+            const reverb = new Tone.Freeverb({ roomSize: 0.7, dampening: 4000 }).toDestination();
             const hoverSound = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.1 } }).connect(reverb);
             hoverSound.volume.value = -20; 
-            
-            const clickSound = new Tone.FMSynth({
-                 modulationIndex: 10,
-                 envelope: { attack: 0.001, decay: 0.05 }, 
-                 modulationEnvelope: { attack: 0.001, decay: 0.02 } 
-            }).toDestination();
+            const clickSound = new Tone.FMSynth({ modulationIndex: 10, envelope: { attack: 0.001, decay: 0.05 }, modulationEnvelope: { attack: 0.001, decay: 0.02 } }).toDestination();
             clickSound.volume.value = -15; 
-
-            const heartbeatSound = new Tone.MembraneSynth({
-                 pitchDecay: 0.008, // Slightly faster decay
-                 octaves: 3,       // Higher octave range
-                 oscillator: { type: 'sine' },
-                 envelope: { attack: 0.001, decay: 0.25, sustain: 0.005, release: 0.1 } // Adjusted envelope
-            }).toDestination();
+            const heartbeatSound = new Tone.MembraneSynth({ pitchDecay: 0.008, octaves: 3, oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.25, sustain: 0.005, release: 0.1 } }).toDestination();
             heartbeatSound.volume.value = -8; 
             
             function playHover() { if (!isMuted) hoverSound.triggerAttackRelease("C6", "32n"); } 
-            
             function playClick() { 
                 if (!isMuted) {
-                    if (Tone.context.state !== 'running') {
-                         Tone.context.resume();
-                    }
+                    if (Tone.context.state !== 'running') { Tone.context.resume(); }
                     clickSound.triggerAttackRelease("C4", "32n", Tone.now()); 
                 }
             } 
             
-            // --- Heartbeat Function ---
+            // --- Heartbeat ---
             function triggerHeartbeat() {
                 if (soundsReady && !isMuted) {
-                    if (Tone.context.state !== 'running') {
-                        Tone.context.resume().then(() => {
-                           const now = Tone.now();
-                           heartbeatSound.triggerAttackRelease('C1', '8n', now); 
-                           heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); 
-                        });
-                    } else {
-                         const now = Tone.now();
-                         heartbeatSound.triggerAttackRelease('C1', '8n', now); 
-                         heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); 
-                    }
+                    const play = () => {
+                        const now = Tone.now();
+                        heartbeatSound.triggerAttackRelease('C1', '8n', now); 
+                        heartbeatSound.triggerAttackRelease('C1', '8n', now + 0.2); 
+                    };
+                    if (Tone.context.state !== 'running') { Tone.context.resume().then(play); } 
+                    else { play(); }
                 }
-
                 gsap.timeline()
                     .to(coreBeat, { intensity: 1.15, duration: 0.1, ease: 'power2.out' }) 
                     .to(coreBeat, { intensity: 1.0, duration: 0.1, ease: 'power2.in' }) 
                     .to(coreBeat, { intensity: 1.25, duration: 0.1, delay: 0.05, ease: 'power2.out' }) 
                     .to(coreBeat, { intensity: 1.0, duration: 0.4, ease: 'power2.in' }); 
-
                 const nextDelay = 3000 + Math.random() * 1000; 
                 setTimeout(triggerHeartbeat, nextDelay);
             }
@@ -965,69 +802,58 @@
                 mainRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 mainRenderer.setClearColor(0x000000, 0); 
 
-                raycaster = new THREE.Raycaster();
-                raycaster.near = 0.1;
-                raycaster.far = 50;
+                raycaster = new THREE.Raycaster(); raycaster.near = 0.1; raycaster.far = 50;
                 
                 controls = new OrbitControls(mainCamera, mainRenderer.domElement);
-                controls.enabled = false; 
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-                controls.target.set(0, 0, 0);
+                controls.enabled = false; controls.enableDamping = true; controls.dampingFactor = 0.05; controls.target.set(0, 0, 0);
 
                 mainScene.add(new THREE.AmbientLight(0xffffff, 0.3)); 
-                const pointLight = new THREE.PointLight(0xffffff, 1.0); 
-                pointLight.position.set(0, 0, 0);
-                mainScene.add(pointLight);
+                const pointLight = new THREE.PointLight(0xffffff, 1.0); pointLight.position.set(0, 0, 0); mainScene.add(pointLight);
 
-                const starGeometry = new THREE.BufferGeometry();
-                const starVertices = [];
-                for (let i = 0; i < 10000; i++) {
-                    const x = (Math.random() - 0.5) * 200;
-                    const y = (Math.random() - 0.5) * 200;
-                    const z = (Math.random() - 0.5) * 200;
-                    starVertices.push(x, y, z);
-                }
+                // Starfield
+                const starGeometry = new THREE.BufferGeometry(); const starVertices = [];
+                for (let i = 0; i < 10000; i++) { starVertices.push((Math.random()-0.5)*300, (Math.random()-0.5)*300, (Math.random()-0.5)*300); } // Wider range
                 starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-                const starMaterial = new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.1, transparent: true, opacity: 0.5 });
-                const stars = new THREE.Points(starGeometry, starMaterial);
-                mainScene.add(stars);
+                const starMaterial = new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.15, transparent: true, opacity: 0.6 }); // Slightly larger/brighter
+                const stars = new THREE.Points(starGeometry, starMaterial); mainScene.add(stars);
 
-                coreGroup = new THREE.Group();
-                coreGroup.position.set(0, 0, 0); 
-                mainScene.add(coreGroup);
+                 // --- Nebula Effect ---
+                const nebulaMaterial = new THREE.ShaderMaterial({
+                    vertexShader: document.getElementById('nebulaVertexShader').textContent,
+                    fragmentShader: noiseCode + document.getElementById('nebulaFragmentShader').textContent,
+                    uniforms: {
+                        uTime: { value: 0 },
+                        uColor1: { value: new THREE.Color(0x1a0033) }, // Deep purple
+                        uColor2: { value: new THREE.Color(0x003366) }  // Dark blue
+                    },
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false // Don't obscure stars
+                });
+                nebulaPlane = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), nebulaMaterial);
+                nebulaPlane.position.z = -150; // Place it far back
+                mainScene.add(nebulaPlane);
 
+
+                // --- AI Core ---
+                coreGroup = new THREE.Group(); coreGroup.position.set(0, 0, 0); mainScene.add(coreGroup);
                 const coreGeom = new THREE.IcosahedronGeometry(2.2, 5); 
-                
                 const coreMat = new THREE.ShaderMaterial({
                     vertexShader: document.getElementById('coreVertexShader').textContent,
                     fragmentShader: noiseCode + document.getElementById('coreFragmentShader').textContent,
-                    uniforms: { uTime: { value: 0 } }
+                    uniforms: { uTime: { value: 0 }, uCoreProximity: { value: 0.0 } } // Added proximity uniform
                 });
-                sunCore = new THREE.Mesh(coreGeom, coreMat); 
-                coreGroup.add(sunCore);
-
+                sunCore = new THREE.Mesh(coreGeom, coreMat); coreGroup.add(sunCore);
                 const wireframeMat = new THREE.MeshBasicMaterial({ color: accentColor, wireframe: true, transparent: true, opacity: 0.8 });
-                wireframeCore = new THREE.Mesh(coreGeom, wireframeMat); 
-                coreGroup.add(wireframeCore);
+                wireframeCore = new THREE.Mesh(coreGeom, wireframeMat); coreGroup.add(wireframeCore);
+                const ringGeom = new THREE.TorusGeometry(3.5, 0.03, 16, 100); const ringMat = new THREE.MeshBasicMaterial({ color: accentColor, opacity: 0.8, transparent: true }); 
+                const ring1 = new THREE.Mesh(ringGeom, ringMat); ring1.rotation.x = Math.PI / 2; const ring2 = ring1.clone(); ring2.rotation.y = Math.PI / 2; coreGroup.add(ring1, ring2);
+                const particlesGeom = new THREE.SphereGeometry(4.2, 32, 32); const particlesMat = new THREE.PointsMaterial({ color: 0xffa500, size: 0.02, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.7 });
+                const particles = new THREE.Points(particlesGeom, particlesMat); coreGroup.add(particles);
 
-
-                const ringGeom = new THREE.TorusGeometry(3.5, 0.03, 16, 100); 
-                const ringMat = new THREE.MeshBasicMaterial({ color: accentColor, opacity: 0.8, transparent: true }); 
-                const ring1 = new THREE.Mesh(ringGeom, ringMat);
-                ring1.rotation.x = Math.PI / 2;
-                const ring2 = ring1.clone();
-                ring2.rotation.y = Math.PI / 2;
-                coreGroup.add(ring1, ring2);
-
-                const particlesGeom = new THREE.SphereGeometry(4.2, 32, 32); 
-                const particlesMat = new THREE.PointsMaterial({ color: 0xffa500, size: 0.02, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.7 });
-                const particles = new THREE.Points(particlesGeom, particlesMat);
-                coreGroup.add(particles);
-
+                // --- Planets ---
                 const planetGeometry = new THREE.SphereGeometry(0.8, 32, 32); 
-                
-                const navItems = [
+                const navItems = [ /* ... same items as before ... */ 
                     { id: 'about', label: 'About', radius: 6, speed: 0.12, inclination: 0.1, eccentricity: 0.02, shader: 'terrestrialFragmentShader' },
                     { id: 'philosophy', label: 'Philosophy', radius: 8, speed: 0.1, inclination: -0.05, eccentricity: 0.05, shader: 'rockyFragmentShader' },
                     { id: 'tech', label: 'Tech', radius: 14, speed: 0.06, inclination: -0.1, eccentricity: 0.03, shader: 'gasGiantFragmentShader' },
@@ -1035,152 +861,117 @@
                     { id: 'github-stats', label: 'GitHub', radius: 11, speed: 0.08, inclination: 0.15, eccentricity: 0.08, shader: 'lavaFragmentShader' },
                     { id: 'contact', label: 'Contact', radius: 20, speed: 0.04, inclination: 0.0, eccentricity: 0.01, shader: 'terrestrialFragmentShader' } 
                 ];
-                
                 const fontLoader = new FontLoader();
                 fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
                     const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
-
                     navItems.forEach((item, i) => {
-                        const nodeGroup = new THREE.Group();
-                        nodeGroup.name = item.id;
-                        nodeGroup.userData = item; 
-                        
+                        const nodeGroup = new THREE.Group(); nodeGroup.name = item.id; nodeGroup.userData = item; 
                         const planetMaterial = new THREE.ShaderMaterial({
                             vertexShader: document.getElementById('planetVertexShader').textContent,
                             fragmentShader: noiseCode + document.getElementById(item.shader).textContent,
                             uniforms: { uTime: { value: 0 }, uShine: { value: 0.0 } }
                         });
-                        
-                        const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
-                        planetMesh.name = item.id; 
-                        nodeGroup.add(planetMesh);
-
+                        const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial); planetMesh.name = item.id; nodeGroup.add(planetMesh);
                         if (item.id === 'contact') {
                             const ringGeom = new THREE.RingGeometry(1.2, 1.8, 64);
-                            const ringMaterial = new THREE.ShaderMaterial({
-                                vertexShader: document.getElementById('planetVertexShader').textContent, 
-                                fragmentShader: noiseCode + document.getElementById('ringFragmentShader').textContent,
-                                uniforms: { uTime: { value: 0 } },
-                                transparent: true, side: THREE.DoubleSide
-                            });
-                            const ringMesh = new THREE.Mesh(ringGeom, ringMaterial);
-                            ringMesh.rotation.x = Math.PI * 0.4; 
-                            nodeGroup.add(ringMesh);
+                            const ringMaterial = new THREE.ShaderMaterial({ vertexShader: document.getElementById('planetVertexShader').textContent, fragmentShader: noiseCode + document.getElementById('ringFragmentShader').textContent, uniforms: { uTime: { value: 0 } }, transparent: true, side: THREE.DoubleSide });
+                            const ringMesh = new THREE.Mesh(ringGeom, ringMaterial); ringMesh.rotation.x = Math.PI * 0.4; nodeGroup.add(ringMesh);
                         }
-                        
-                        const textGeom = new TextGeometry(item.label, { font: font, size: 0.4, height: 0.05 });
-                        textGeom.center();
-                        const textMesh = new THREE.Mesh(textGeom, textMaterial.clone());
-                        textMesh.position.y = 1.3; 
-                        textMesh.name = "text";
-                        nodeGroup.add(textMesh);
-                        
+                        const textGeom = new TextGeometry(item.label, { font: font, size: 0.4, height: 0.05 }); textGeom.center();
+                        const textMesh = new THREE.Mesh(textGeom, textMaterial.clone()); textMesh.position.y = 1.3; textMesh.name = "text"; nodeGroup.add(textMesh);
                         const angle = i * (Math.PI * 2 / navItems.length);
-                        nodeGroup.position.x = Math.cos(angle) * item.radius;
-                        nodeGroup.position.z = Math.sin(angle) * item.radius;
-
-                        mainScene.add(nodeGroup);
-                        navNodes.push(nodeGroup);
+                        nodeGroup.position.x = Math.cos(angle) * item.radius; nodeGroup.position.z = Math.sin(angle) * item.radius;
+                        mainScene.add(nodeGroup); navNodes.push(nodeGroup);
                     });
                 });
 
+                // --- Animation Loop ---
                 const animate = () => {
                     requestAnimationFrame(animate);
                     const elapsedTime = clock.getElapsedTime();
                     
+                    // Core Animation
                     if (sunCore && wireframeCore) { 
                         sunCore.scale.setScalar(coreBeat.intensity * 0.75); 
                         wireframeCore.scale.setScalar(coreBeat.intensity * 1.0); 
                         sunCore.material.uniforms.uTime.value = elapsedTime * 0.5; 
                     }
-
-                    ring1.rotation.z = elapsedTime * 0.2;
-                    ring2.rotation.z = elapsedTime * 0.2;
-                    particles.rotation.y = -elapsedTime * 0.05;
-                    coreGroup.rotation.y = elapsedTime * 0.1;
+                    ring1.rotation.z = elapsedTime * 0.2; ring2.rotation.z = elapsedTime * 0.2; particles.rotation.y = -elapsedTime * 0.05; coreGroup.rotation.y = elapsedTime * 0.1;
                     
+                    // Planet Animation & Rotation
                     navNodes.forEach((node) => {
-                        const data = node.userData;
-                        const angle = elapsedTime * data.speed;
-                        const eccentricity = data.eccentricity; 
-                        const r = data.radius * (1 - eccentricity * eccentricity) / (1 + eccentricity * Math.cos(angle));
-                        node.position.x = Math.cos(angle) * r;
-                        node.position.y = Math.sin(angle) * r * Math.sin(data.inclination);
-                        node.position.z = Math.sin(angle) * r * Math.cos(data.inclination);
-                        node.children[0].material.uniforms.uTime.value = elapsedTime;
-                        node.children[0].rotation.y += 0.005;
-                        if(data.id === 'contact' && node.children[1]) {
-                            node.children[1].material.uniforms.uTime.value = elapsedTime;
-                        }
-                        const textMesh = node.getObjectByName("text");
-                        if (textMesh) { textMesh.quaternion.copy(mainCamera.quaternion); }
+                        const data = node.userData; const angle = elapsedTime * data.speed; const e = data.eccentricity; 
+                        const r = data.radius * (1 - e*e) / (1 + e * Math.cos(angle));
+                        node.position.x = Math.cos(angle) * r; node.position.y = Math.sin(angle) * r * Math.sin(data.inclination); node.position.z = Math.sin(angle) * r * Math.cos(data.inclination);
+                        const planetMesh = node.children[0]; // Get the planet mesh
+                        planetMesh.material.uniforms.uTime.value = elapsedTime;
+                        planetMesh.rotation.y += 0.001; // Slow rotation added
+
+                        if(data.id === 'contact' && node.children[1]) { node.children[1].material.uniforms.uTime.value = elapsedTime; }
+                        const textMesh = node.getObjectByName("text"); if (textMesh) { textMesh.quaternion.copy(mainCamera.quaternion); }
                     });
 
-                    // --- Raycaster / Hover Logic ---
+                    // Nebula Animation
+                    if (nebulaPlane) { nebulaPlane.material.uniforms.uTime.value = elapsedTime; }
+
+                    // Hover & Proximity Logic
+                    let coreProximityValue = 0;
                     if (document.querySelectorAll('.content-panel.active').length === 0) {
                         raycaster.setFromCamera(mouse, mainCamera);
                         const planetMeshes = navNodes.map(group => group.children[0]);
                         const intersects = raycaster.intersectObjects(planetMeshes);
-
                         if (intersects.length > 0) {
-                            const intersectedMesh = intersects[0].object;
-                            const intersectedGroup = intersectedMesh.parent;
+                            const intersectedGroup = intersects[0].object.parent;
                             if (hoveredNode !== intersectedGroup) {
-                                if (hoveredNode) { // Animate out previous
-                                    gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 0, duration: 0.5 });
-                                    const oldText = hoveredNode.getObjectByName("text");
-                                    if (oldText) gsap.to(oldText.material, { opacity: 0, duration: 0.5 });
-                                    customCursor.classList.remove('hover'); // NEW: Remove hover class for custom cursor
-                                }
-                                hoveredNode = intersectedGroup;
-                                playHover();
-                                customCursor.classList.add('hover'); // NEW: Add hover class for custom cursor
-                                gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 1.0, duration: 0.5 });
-                                const newText = hoveredNode.getObjectByName("text");
-                                if (newText) gsap.to(newText.material, { opacity: 1.0, duration: 0.5 });
+                                if (hoveredNode) { gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 0, duration: 0.5 }); const oldText = hoveredNode.getObjectByName("text"); if (oldText) gsap.to(oldText.material, { opacity: 0, duration: 0.5 }); customCursor.classList.remove('hover'); }
+                                hoveredNode = intersectedGroup; playHover(); customCursor.classList.add('hover');
+                                gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 1.0, duration: 0.5 }); const newText = hoveredNode.getObjectByName("text"); if (newText) gsap.to(newText.material, { opacity: 1.0, duration: 0.5 });
                             }
                         } else {
-                            if (hoveredNode) { // Animate out when no longer hovering
-                                customCursor.classList.remove('hover'); // NEW: Remove hover class
-                                gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 0, duration: 0.5 });
-                                const oldText = hoveredNode.getObjectByName("text");
-                                if (oldText) gsap.to(oldText.material, { opacity: 0, duration: 0.5 });
-                                hoveredNode = null;
-                            }
+                            if (hoveredNode) { customCursor.classList.remove('hover'); gsap.to(hoveredNode.children[0].material.uniforms.uShine, { value: 0, duration: 0.5 }); const oldText = hoveredNode.getObjectByName("text"); if (oldText) gsap.to(oldText.material, { opacity: 0, duration: 0.5 }); hoveredNode = null; }
+                           
+                           // Calculate core proximity only if not hovering a planet
+                           const mouseDistance = Math.sqrt(mouse.x * mouse.x + mouse.y * mouse.y);
+                           // Use the JS smoothstep function defined earlier
+                           coreProximityValue = 1.0 - smoothstep(0.0, 0.4, mouseDistance); // Glow increases closer to center (adjust 0.4 threshold)
                         }
-                    } else {
-                        // Ensure hover state is reset if panel is active
-                        if (hoveredNode) {
-                           customCursor.classList.remove('hover'); 
-                           hoveredNode = null; 
-                        }
+                    } else { if (hoveredNode) { customCursor.classList.remove('hover'); hoveredNode = null; } }
+
+                    // Update Core Proximity Uniform
+                    if (sunCore) {
+                        // Smoothly animate the uniform value
+                         gsap.to(sunCore.material.uniforms.uCoreProximity, { value: coreProximityValue, duration: 0.3 });
                     }
 
 
-                    if (document.querySelectorAll('.content-panel.active').length === 0) {
-                        if (!gsap.isTweening(mainCamera.position)) {
-                             mainCamera.position.x = THREE.MathUtils.lerp(mainCamera.position.x, homePosition.x + mouse.x * 2, 0.05);
-                             mainCamera.position.y = THREE.MathUtils.lerp(mainCamera.position.y, homePosition.y + mouse.y * 2, 0.05);
-                             controls.target.set(0,0,0);
-                        }
+                    // Camera Parallax & Rendering
+                    if (document.querySelectorAll('.content-panel.active').length === 0 && !gsap.isTweening(mainCamera.position)) {
+                         mainCamera.position.x = THREE.MathUtils.lerp(mainCamera.position.x, homePosition.x + mouse.x * 1.5, 0.05); // Reduced parallax slightly
+                         mainCamera.position.y = THREE.MathUtils.lerp(mainCamera.position.y, homePosition.y + mouse.y * 1.5, 0.05);
+                         controls.target.set(0,0,0);
                     }
-                    
-                    mainCamera.lookAt(controls.target);
-                    controls.update();
-                    mainRenderer.render(mainScene, mainCamera);
+                    mainCamera.lookAt(controls.target); controls.update(); mainRenderer.render(mainScene, mainCamera);
                 };
                 animate();
                 
+                // --- Resize Listener ---
                 window.addEventListener('resize', () => {
-                    mainCamera.aspect = window.innerWidth / window.innerHeight;
+                    const aspect = window.innerWidth / window.innerHeight;
+                    mainCamera.aspect = aspect;
+                    // Adjust FOV based on aspect ratio
+                    if (aspect < 1) { // Portrait or square
+                        mainCamera.fov = 60; // Slightly wider FOV
+                    } else { // Landscape
+                        mainCamera.fov = 50; // Default FOV
+                    }
                     mainCamera.updateProjectionMatrix();
                     mainRenderer.setSize(window.innerWidth, window.innerHeight);
                     mainRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 });
-            }
+            } // End initMainScene
 
-            // --- CAMERA NAVIGATION & PANEL LOGIC ---
-            function flyToSection(targetId) {
+            // --- CAMERA NAVIGATION & PANEL LOGIC --- (Mostly unchanged)
+             function flyToSection(targetId) {
                 playClick();
                 gsap.to("#home-content", { opacity: 0, duration: 0.5, pointerEvents: 'none' });
 
@@ -1229,9 +1020,11 @@
                     if (activePanel) { closePanel(); }
                     if (targetId === "home") { flyToSection(null); } 
                     else { flyToSection(targetId); }
-                    if (this.classList.contains('mobile-nav-link')) { mobileMenu.classList.add('hidden'); }
+                    const mobileMenu = document.getElementById('mobile-menu'); // Ensure mobileMenu is defined here or globally
+                    if (mobileMenu && this.classList.contains('mobile-nav-link')) { mobileMenu.classList.add('hidden'); }
                 });
             });
+
 
             window.addEventListener('click', () => {
                 if (hoveredNode && !document.querySelector('.content-panel.active')) {
@@ -1243,40 +1036,30 @@
                 btn.addEventListener('click', closePanel);
             });
 
-            // --- GLOBAL MOUSE & SOUND LISTENERS ---
+            // --- GLOBAL MOUSE & SOUND ---
             window.addEventListener('mousemove', e => {
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-                // NEW: Position custom cursor div
                 customCursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-                customCursor.style.opacity = '1'; // Make visible on move
+                customCursor.style.opacity = '1'; 
             });
-            
-             window.addEventListener('mouseout', () => { // Hide when mouse leaves window
-                customCursor.style.opacity = '0';
-            });
-
-            window.addEventListener('mousedown', () => {
+             window.addEventListener('mouseout', () => { customCursor.style.opacity = '0'; });
+             window.addEventListener('mousedown', () => {
+                 // Add 'clicked' class for visual feedback
+                 customCursor?.classList.add('clicked');
                 if (!soundsReady) {
-                    Tone.start().then(() => {
-                        console.log("AudioContext started successfully!");
-                        soundsReady = true;
-                        playClick(); 
-                    }).catch(e => { console.error("Error starting AudioContext:", e); });
-                } else {
-                    playClick(); 
-                }
-                // Optional: Scale effect on click
-                gsap.to(customCursor, { scale: 0.8, duration: 0.1, yoyo: true, repeat: 1 }); 
+                    Tone.start().then(() => { soundsReady = true; playClick(); }).catch(e => console.error("AudioCtx start err:", e));
+                } else { playClick(); }
+                // Remove 'clicked' class after a short delay
+                 setTimeout(() => customCursor?.classList.remove('clicked'), 100); 
             });
              
-            // NEW: Add hover listeners to 2D interactive elements
+            // Hover listeners for 2D elements (ensure customCursor is defined)
             const interactiveElements = document.querySelectorAll('a, button, input, textarea, select, label, .project-card, .tech-card, .github-card, .contact-icon-link, .filter-btn, .modal-close-btn, #mute-btn');
             interactiveElements.forEach(el => {
-                el.addEventListener('mouseenter', () => customCursor.classList.add('hover'));
-                el.addEventListener('mouseleave', () => customCursor.classList.remove('hover'));
+                el.addEventListener('mouseenter', () => customCursor?.classList.add('hover'));
+                el.addEventListener('mouseleave', () => customCursor?.classList.remove('hover'));
             });
-
             
             // --- MUTE BUTTON ---
             const muteBtn = document.getElementById('mute-btn');
@@ -1287,25 +1070,26 @@
                 soundOnIcon.classList.toggle('hidden', isMuted);
                 soundOffIcon.classList.toggle('hidden', !isMuted);
                 if (!isMuted && !soundsReady) {
-                     Tone.start().then(() => {
-                        console.log("AudioContext started on unmute.");
-                        soundsReady = true;
-                    }).catch(e => { console.error("Error starting AudioContext on unmute:", e); });
+                     Tone.start().then(() => { soundsReady = true; }).catch(e => console.error("AudioCtx start err:", e));
                 }
             });
             
+            // --- MOBILE MENU ---
             const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            mobileMenuButton.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+            const mobileMenu = document.getElementById('mobile-menu'); // Define mobileMenu here
+            if (mobileMenuButton && mobileMenu) { // Check if elements exist
+               mobileMenuButton.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+            } else {
+                console.error("Mobile menu button or menu itself not found!");
+            }
             
-            // --- Data for Modals ---
-            const experienceData = [
-                { title: "AI & ML Developer", company: "Samsung PRISM", points: ["Developed AI reverse prompt generator analyzing images to create text prompts.", "Engineered AI proctoring system with real-time face detection.", "Utilized GANs for medical image segmentation and enhancement.", "Trained models using Python, TensorFlow, and OpenCV."] },
+            // --- DATA & DOM POPULATION --- (Functions remain largely the same)
+            const experienceData = [ /* ... */ 
+                 { title: "AI & ML Developer", company: "Samsung PRISM", points: ["Developed AI reverse prompt generator analyzing images to create text prompts.", "Engineered AI proctoring system with real-time face detection.", "Utilized GANs for medical image segmentation and enhancement.", "Trained models using Python, TensorFlow, and OpenCV."] },
                 { title: "Full-Stack Developer", company: "Personal Projects", points: ["Architected 'API-Forge,' a no-code backend solution.", "Designed robust relational database systems for various applications.", "Developed a full-featured social media website.", "Created scalable cloud networks using CISCO simulation tools."] }
             ];
-            
-            const projectsData = [
-                 { name: "Medical Image Segmentation", category: "ai", desc: "Utilized GANs for segmenting bone fractures in medical imagery.", tags: [{n: "GANs", c: "gold"}, {n: "AI/ML", c: "gold"}, {n: "Python", c: "gold"}], link: "https://github.com/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/medical_image_segmentation_usi.png" },
+            const projectsData = [ /* ... */ 
+                  { name: "Medical Image Segmentation", category: "ai", desc: "Utilized GANs for segmenting bone fractures in medical imagery.", tags: [{n: "GANs", c: "gold"}, {n: "AI/ML", c: "gold"}, {n: "Python", c: "gold"}], link: "https://github.com/Monish21072004/Medical-Image-Segmentation-for-Bone-Fracture-using-GAN", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/medical_image_segmentation_usi.png" },
                 { name: "API-Forge: No-Code Backend", category: "web", desc: "A no-code backend solution simplifying API creation.", tags: [{n: "Backend", c: "gold"}, {n: "Node.js", c: "gold"}, {n: "API", c: "gold"}], link: "https://github.com/Monish21072004/API-Forge", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/api_forge__no_code_backend_a_n.png" },
                 { name: "Dragon Proctor: AI Proctoring", category: "ai", desc: "AI proctoring solution with real-time facial detection.", tags: [{n: "CompVision", c: "gold"}, {n: "AI", c: "gold"}, {n: "OpenCV", c: "gold"}], link: "https://github.com/Monish21072004/dragon_proctor", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/dragon_proctor__ai_proctoring_.png" },
                 { name: "AI Reverse Prompt Generator", category: "ai", desc: "An AI tool (Samsung PRISM) that analyzes images to generate text prompts.", tags: [{n: "AI/ML", c: "gold"}, {n: "Python", c: "gold"}, {n: "NLP", c: "gold"}], link: "https://github.com/Monish21072004/23GAI32_Reverse_prompt_generator-main", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/ai_reverse_prompt_generator_an.png" },
@@ -1318,9 +1102,8 @@
                 { name: "Store Management System", category: "software", desc: "A robust database-driven application for managing store inventory.", tags: [{n: "Database", c: "gold"}, {n: "SQL", c: "gold"}, {n: "Backend", c: "gold"}], link: "https://github.com/Monish21072004/Store_Management.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/store_management_system_a_robu.png" },
                 { name: "Bingo Game", category: "game", desc: "A classic Bingo game with an interactive UI. Fun for all ages!", tags: [{n: "GameDev", c: "gold"}, {n: "JavaScript", c: "gold"}, {n: "CSS", c: "gold"}], link: "https://github.com/Monish21072004/Bingo-game.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/BingoGame.png", demo: "https://monish21072004.github.io/Bingo-game" }
             ];
-
-            const technologiesData = [
-                { name: "Python", desc: "My primary language for AI/ML, backend services, and scripting.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" },
+            const technologiesData = [ /* ... */ 
+                 { name: "Python", desc: "My primary language for AI/ML, backend services, and scripting.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" },
                 { name: "JavaScript", desc: "Used for frontend interactivity and building dynamic web applications.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" },
                 { name: "TensorFlow", desc: "Experience in building and training deep learning models for various tasks.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/tensorflow/tensorflow-original.svg" },
                 { name: "PyTorch", desc: "Proficient in creating neural networks for research and production environments.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/pytorch/pytorch-original.svg" },
@@ -1334,42 +1117,48 @@
                 { name: "HTML5 & CSS3", desc: "Crafting modern, responsive, and visually appealing user interfaces.", icon: "https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg" },
             ];
 
+            // Experience Timeline Population
             const experienceContainer = document.getElementById('experience-container');
-            experienceData.forEach((exp, index) => {
-                const isLeft = index % 2 === 0;
+            experienceData.forEach((exp, index) => { /* ... populate ... */ 
+                 const isLeft = index % 2 === 0;
                 const container = document.createElement('div');
-                container.className = `timeline-container ${isLeft ? 'left' : 'right'} gsap-reveal`;
-                container.innerHTML = `<div class="timeline-content"><h3 class="text-white text-2xl font-bold">${exp.title}</h3><p class="text-secondary-text text-lg font-semibold m-0">${exp.company}</p><ul class="mt-4 list-disc ml-5 space-y-2">${exp.points.map(p => `<li class="text-sm">${p}</li>`).join('')}</ul></div>`;
+                container.className = `timeline-container ${isLeft ? 'left' : 'right'} gsap-reveal`; // Class determined by media query now mostly
+                container.innerHTML = `<div class="timeline-content"><h3 class="text-white text-xl md:text-2xl font-bold">${exp.title}</h3><p class="text-secondary-text text-base md:text-lg font-semibold m-0">${exp.company}</p><ul class="mt-3 md:mt-4 list-disc ml-5 space-y-2">${exp.points.map(p => `<li class="text-xs md:text-sm">${p}</li>`).join('')}</ul></div>`; // Adjusted text sizes
                 experienceContainer.appendChild(container);
             });
 
+             // Project Cards Population
             const projectsContainer = document.getElementById('projects-container');
-            const renderProjects = (filter = 'all') => {
+            const renderProjects = (filter = 'all') => { /* ... populate ... */ 
                 projectsContainer.innerHTML = '';
                 const filteredProjects = filter === 'all' ? projectsData : projectsData.filter(p => p.category === filter);
                 filteredProjects.forEach((p) => {
                     const originalIndex = projectsData.indexOf(p);
                     const card = document.createElement('div');
-                    card.className = 'project-card p-5 rounded-2xl w-full';
+                    card.className = 'project-card p-4 md:p-5 rounded-2xl w-full'; // Adjusted padding
                     card.dataset.index = originalIndex;
-                    card.innerHTML = `<div class="relative w-full h-[230px]"><img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-2xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1A1A1A/D4AF37?text=Image+Not+Found';"/></div><div class="mt-5"><h3 class="text-white font-bold text-2xl">${p.name}</h3><p class="mt-2 text-sm text-gray-400">${p.desc}</p></div><div class="mt-4 flex gap-2">${p.tags.map(t => `<p class="tag gold-text-gradient">#${t.n}</p>`).join('')}</div>`;
+                    // Adjusted image container height and text sizes
+                    card.innerHTML = `<div class="relative w-full h-[180px] md:h-[230px]"><img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover rounded-xl md:rounded-2xl" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1A1A1A/D4AF37?text=Image+Not+Found';"/></div><div class="mt-4 md:mt-5"><h3 class="text-white font-bold text-xl md:text-2xl">${p.name}</h3><p class="mt-1 md:mt-2 text-xs md:text-sm text-gray-400">${p.desc}</p></div><div class="mt-3 md:mt-4 flex gap-2">${p.tags.map(t => `<p class="tag text-xs md:text-sm gold-text-gradient">#${t.n}</p>`).join('')}</div>`; 
                     projectsContainer.appendChild(card);
                 });
                 gsap.fromTo(projectsContainer.children, { y: 50, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8, ease: "power3.out", stagger: 0.1 });
             }
 
+            // Tech Icons Population
             const techContainer = document.getElementById('tech-icons-container');
-            technologiesData.forEach((tech, index) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'tech-card p-4 rounded-lg flex flex-col items-center justify-center gap-2 gsap-reveal';
+            technologiesData.forEach((tech, index) => { /* ... populate ... */ 
+                 const wrapper = document.createElement('div');
+                wrapper.className = 'tech-card p-3 md:p-4 rounded-lg flex flex-col items-center justify-center gap-1 md:gap-2 gsap-reveal'; // Adjusted padding/gap
                 wrapper.dataset.index = index;
-                wrapper.innerHTML = `<img src="${tech.icon}" alt="${tech.name}" class="w-16 h-16 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1A1A1A/D4AF37?text=${tech.name}';" /><p class="tech-name text-white font-medium text-center">${tech.name}</p>`;
+                // Adjusted image size and text size
+                wrapper.innerHTML = `<img src="${tech.icon}" alt="${tech.name}" class="w-12 h-12 md:w-16 md:h-16 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1A1A1A/D4AF37?text=${tech.name}';" /><p class="tech-name text-white font-medium text-center text-xs md:text-sm">${tech.name}</p>`; 
                 techContainer.appendChild(wrapper);
             });
 
+            // Filter Buttons Event Listener
             const filterButtons = document.querySelectorAll('.filter-btn');
-            filterButtons.forEach(button => {
-                button.addEventListener('click', () => {
+            filterButtons.forEach(button => { /* ... listeners ... */ 
+                 button.addEventListener('click', () => {
                     playClick();
                     filterButtons.forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
@@ -1378,9 +1167,10 @@
                 button.addEventListener('mouseenter', playHover);
             });
 
+             // Project Modal Logic
             const projectModal = document.getElementById('project-modal');
             const projectModalCloseBtn = projectModal.querySelector('.modal-close-btn');
-            projectsContainer.addEventListener('click', (e) => {
+            projectsContainer.addEventListener('click', (e) => { /* ... populate modal ... */ 
                 const card = e.target.closest('.project-card');
                 if (card) {
                     playClick();
@@ -1390,22 +1180,19 @@
                     document.getElementById('modal-project-desc').innerText = project.desc; 
                     document.getElementById('modal-project-link').href = project.link;
                     const demoLink = document.getElementById('modal-project-demo-link');
-                    if (project.demo) {
-                        demoLink.href = project.demo;
-                        demoLink.style.display = 'inline-block';
-                    } else {
-                        demoLink.style.display = 'none';
-                    }
+                    if (project.demo) { demoLink.href = project.demo; demoLink.style.display = 'inline-block'; } 
+                    else { demoLink.style.display = 'none'; }
                     const tagsContainer = document.getElementById('modal-project-tags');
-                    tagsContainer.innerHTML = project.tags.map(t => `<p class="tag gold-text-gradient bg-black bg-opacity-20 px-2 py-1 rounded-md">#${t.n}</p>`).join('');
+                    tagsContainer.innerHTML = project.tags.map(t => `<p class="tag text-xs md:text-sm gold-text-gradient bg-black bg-opacity-20 px-2 py-1 rounded-md">#${t.n}</p>`).join('');
                     projectModal.classList.add('active');
                 }
             });
 
+             // Tech Modal Logic
             const techModal = document.getElementById('tech-modal');
             const techModalCloseBtn = techModal.querySelector('.modal-close-btn');
-            techContainer.addEventListener('click', (e) => {
-                const card = e.target.closest('.tech-card');
+            techContainer.addEventListener('click', (e) => { /* ... populate modal ... */ 
+                 const card = e.target.closest('.tech-card');
                 if (card) {
                     playClick();
                     const tech = technologiesData[card.dataset.index];
@@ -1416,32 +1203,39 @@
                 }
             });
 
+            // Modal Close Logic
             function closeModal(modal) { playClick(); modal.classList.remove('active'); }
-            projectModalCloseBtn.addEventListener('click', () => closeModal(projectModal));
-            projectModal.addEventListener('click', (e) => { if (e.target === projectModal) closeModal(projectModal); });
-            techModalCloseBtn.addEventListener('click', () => closeModal(techModal));
-            techModal.addEventListener('click', (e) => { if (e.target === techModal) closeModal(techModal); });
+            projectModalCloseBtn?.addEventListener('click', () => closeModal(projectModal));
+            projectModal?.addEventListener('click', (e) => { if (e.target === projectModal) closeModal(projectModal); });
+            techModalCloseBtn?.addEventListener('click', () => closeModal(techModal));
+            techModal?.addEventListener('click', (e) => { if (e.target === techModal) closeModal(techModal); });
             
-            function animateHeadings(panel) {
+            // GSAP Animations on Panel Open
+            function animateHeadings(panel) { /* ... animations ... */ 
                 panel.querySelectorAll('.section-head').forEach(heading => {
-                    const text = heading.textContent;
-                    heading.innerHTML = '';
-                    text.split('').forEach(char => {
-                        const span = document.createElement('span');
-                        span.className = 'char inline-block';
-                        span.textContent = char === ' ' ? '\u00A0' : char;
-                        heading.appendChild(span);
-                    });
-                    gsap.fromTo(heading.querySelectorAll('.char'), { y: '115%' }, { y: 0, stagger: 0.05, delay: 0.5, duration: 0.5, ease: 'power3.out' });
+                    // Split text only if not already split
+                    if (!heading.querySelector('.char')) {
+                        const text = heading.textContent;
+                        heading.innerHTML = '';
+                        text.split('').forEach(char => {
+                            const span = document.createElement('span');
+                            span.className = 'char inline-block';
+                            span.textContent = char === ' ' ? '\u00A0' : char;
+                            heading.appendChild(span);
+                        });
+                    }
+                    gsap.fromTo(heading.querySelectorAll('.char'), { y: '115%' }, { y: 0, stagger: 0.05, delay: 0.5, duration: 0.5, ease: 'power3.out', overwrite: true });
                 });
                 gsap.utils.toArray(panel.querySelectorAll('.gsap-reveal')).forEach(el => {
-                    gsap.fromTo(el, {y: 50, autoAlpha: 0}, { y: 0, autoAlpha: 1, duration: 1.2, ease: "power3.out", stagger: 0.1, delay: 0.2 });
+                    gsap.fromTo(el, {y: 50, autoAlpha: 0}, { y: 0, autoAlpha: 1, duration: 1.2, ease: "power3.out", stagger: 0.1, delay: 0.2, overwrite: true });
                 });
             }
 
+
+            // Contact Icons Hover Effect
             const contactIcons = document.querySelectorAll('.contact-icon-link');
-            contactIcons.forEach(icon => {
-                icon.addEventListener('mousemove', e => {
+            contactIcons.forEach(icon => { /* ... listeners ... */ 
+                 icon.addEventListener('mousemove', e => {
                     const rect = icon.getBoundingClientRect();
                     const x = e.clientX - (rect.left + rect.width / 2);
                     const y = e.clientY - (rect.top + rect.height / 2);
@@ -1453,28 +1247,34 @@
                 icon.addEventListener('mouseenter', playHover);
             });
             
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('mouseenter', playHover);
-            });
+            // Nav Links Hover Sound
+            document.querySelectorAll('.nav-link').forEach(link => { link.addEventListener('mouseenter', playHover); });
 
-            async function getGitHubStats() {
-                try {
+            // GitHub Stats Fetch
+            async function getGitHubStats() { /* ... fetch ... */ 
+                 try {
                     const userResponse = await fetch('https://api.github.com/users/Monish21072004');
                     if (!userResponse.ok) throw new Error(`HTTP error! status: ${userResponse.status}`);
                     const userData = await userResponse.json();
-                    document.getElementById('repo-count').innerText = userData.public_repos || 0;
+                     const repoCountEl = document.getElementById('repo-count');
+                     if (repoCountEl) repoCountEl.innerText = userData.public_repos || 0;
+
                     const reposResponse = await fetch('https://api.github.com/users/Monish21072004/repos?per_page=100');
                      if (!reposResponse.ok) throw new Error(`HTTP error! status: ${reposResponse.status}`);
                     const reposData = await reposResponse.json();
                     const totalStars = reposData.reduce((acc, repo) => acc + (repo.stargazers_count || 0), 0);
-                    document.getElementById('star-count').innerText = totalStars;
+                     const starCountEl = document.getElementById('star-count');
+                    if (starCountEl) starCountEl.innerText = totalStars;
                 } catch (error) {
                     console.error("Error fetching GitHub stats:", error);
-                    document.getElementById('repo-count').innerText = 'N/A';
-                    document.getElementById('star-count').innerText = 'N/A';
+                     const repoCountEl = document.getElementById('repo-count');
+                     const starCountEl = document.getElementById('star-count');
+                     if (repoCountEl) repoCountEl.innerText = 'N/A';
+                     if (starCountEl) starCountEl.innerText = 'N/A';
                 }
             }
 
+            // --- Init ---
             initMainScene();
             renderProjects(); 
             getGitHubStats();
