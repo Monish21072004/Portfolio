@@ -125,60 +125,28 @@
     
     <!-- Sun Core Shader -->
     <script type="x-shader/x-vertex" id="coreVertexShader">
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        void main() {
-            vUv = uv;
-            vNormal = normalize(normalMatrix * normal);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
+        varying vec2 vUv; varying vec3 vNormal;
+        void main() { vUv = uv; vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
     </script>
     <script type="x-shader/x-fragment" id="coreFragmentShader">
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        uniform float uTime;
-        uniform float uCoreProximity; // Uniform for proximity glow
-
-        // Noise code injected by JS
-        
-        float fresnel(float bias, float scale, float power) {
-            return bias + scale * pow(1.0 - dot(vNormal, vec3(0.0, 0.0, 1.0)), power);
-        }
-
+        varying vec2 vUv; varying vec3 vNormal; uniform float uTime; uniform float uCoreProximity; 
+        // Noise code injected
+        float fr(float b, float s, float p){ return b+s*pow(1.-dot(vNormal,vec3(0,0,1)),p); }
         void main() {
-            float noise = snoise(vec3(vUv * 3.0, uTime * 0.2)); 
-            noise += snoise(vec3(vUv * 10.0, uTime * 0.5)) * 0.5; 
-            noise = (noise + 1.0) * 0.5; 
-
-            vec3 colorRed = vec3(1.0, 0.1, 0.0);
-            vec3 colorOrange = vec3(1.0, 0.5, 0.0);
-            vec3 colorYellow = vec3(1.0, 0.9, 0.0);
-
-            vec3 color = mix(colorRed, colorOrange, smoothstep(0.2, 0.5, noise));
-            color = mix(color, colorYellow, smoothstep(0.5, 0.7, noise));
-
-            float atmosphere = fresnel(0.1, 0.9, 7.0);
-            color += colorYellow * atmosphere * 0.8; 
-
-            float hotspots = snoise(vec3(vUv * 5.0, uTime * 0.3));
-            hotspots = smoothstep(0.8, 0.85, hotspots);
-            color += vec3(1.0, 1.0, 0.5) * hotspots * 0.5;
-
-            color += vec3(0.2, 0.15, 0.0) * uCoreProximity; // Proximity glow added
-
-            gl_FragColor = vec4(color, 1.0);
+            float n=snoise(vec3(vUv*3.,uTime*.2)); n+=snoise(vec3(vUv*10.,uTime*.5))*.5; n=(n+1.)*.5; 
+            vec3 cr=vec3(1.,.1,0.); vec3 co=vec3(1.,.5,0.); vec3 cy=vec3(1.,.9,0.);
+            vec3 c=mix(cr,co,smoothstep(.2,.5,n)); c=mix(c,cy,smoothstep(.5,.7,n));
+            float a=fr(.1,.9,7.); c+=cy*a*.8; 
+            float h=snoise(vec3(vUv*5.,uTime*.3)); h=smoothstep(.8,.85,h); c+=vec3(1.,1.,.5)*h*.5;
+            c+=vec3(.2,.15,0.)*uCoreProximity; 
+            gl_FragColor=vec4(c,1.);
         }
     </script>
 
     <!-- Planet Shaders -->
     <script type="x-shader/x-vertex" id="planetVertexShader">
-        varying vec2 vUv;
-        varying vec3 vNormal;
-        void main() {
-            vUv = uv;
-            vNormal = normalize(normalMatrix * normal);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
+        varying vec2 vUv; varying vec3 vNormal;
+        void main() { vUv = uv; vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
     </script>
 
     <!-- Terrestrial Planet Shader -->
@@ -195,16 +163,21 @@
         }
     </script>
     
-    <!-- Gas Giant Planet Shader -->
+    <!-- Gas Giant Planet Shader (UPDATED with color uniforms) -->
     <script type="x-shader/x-fragment" id="gasGiantFragmentShader">
         varying vec2 vUv; varying vec3 vNormal; uniform float uTime; uniform float uShine;
+        uniform vec3 uColor1; // New
+        uniform vec3 uColor2; // New
+        uniform vec3 uColor3; // New
         // Noise code injected
         float fr(float b, float s, float p){ return b+s*pow(1.-dot(vNormal,vec3(0,0,1)),p); }
         void main() {
             float n=snoise(vec3(vUv.y*10.,vUv.x*2.+uTime*.2,uTime*.1)); n=(n+1.)*.5;
-            vec3 c1=vec3(.8,.5,.2); vec3 c2=vec3(.6,.3,.1); vec3 c3=vec3(.9,.8,.7);
-            vec3 c=mix(c1,c2,smoothstep(.4,.6,n)); c=mix(c,c3,smoothstep(.7,.8,n));
-            float a=fr(.1,.9,5.); c+=vec3(.8,.6,.4)*a; c+=vec3(1.)*uShine*(.5+a*.5);
+            // Use uniforms instead of hardcoded colors
+            vec3 c=mix(uColor1, uColor2, smoothstep(.4,.6,n)); 
+            c=mix(c, uColor3, smoothstep(.7,.8,n));
+            float a=fr(.1,.9,5.); c+=mix(uColor1, uColor3, 0.5) * a; // Mix atmosphere color too
+            c+=vec3(1.)*uShine*(.5+a*.5);
             gl_FragColor=vec4(c,1.);
         }
     </script>
@@ -780,11 +753,14 @@
 
                 // --- Planets ---
                 const planetGeometry = new THREE.SphereGeometry(0.8, 32, 32); 
+                // UPDATED navItems with colorSet for Gas Giants
                 const navItems = [ 
                     { id: 'about', label: 'About', radius: 6, speed: 0.12, inclination: 0.1, eccentricity: 0.02, shader: 'terrestrialFragmentShader' },
                     { id: 'philosophy', label: 'Philosophy', radius: 8, speed: 0.1, inclination: -0.05, eccentricity: 0.05, shader: 'rockyFragmentShader' },
-                    { id: 'tech', label: 'Tech', radius: 14, speed: 0.06, inclination: -0.1, eccentricity: 0.03, shader: 'gasGiantFragmentShader' },
-                    { id: 'projects', label: 'Projects', radius: 17, speed: 0.05, inclination: 0.05, eccentricity: 0.06, shader: 'gasGiantFragmentShader' },
+                    { id: 'tech', label: 'Tech', radius: 14, speed: 0.06, inclination: -0.1, eccentricity: 0.03, shader: 'gasGiantFragmentShader', 
+                      colorSet: [new THREE.Color(0x2a4d69), new THREE.Color(0x4b86b4), new THREE.Color(0xadcbe3)] }, // Blues/Greys
+                    { id: 'projects', label: 'Projects', radius: 17, speed: 0.05, inclination: 0.05, eccentricity: 0.06, shader: 'gasGiantFragmentShader', 
+                      colorSet: [new THREE.Color(0x8c4b2f), new THREE.Color(0xda9a7a), new THREE.Color(0xffdcb3)] }, // Oranges/Browns/Creams
                     { id: 'github-stats', label: 'GitHub', radius: 11, speed: 0.08, inclination: 0.15, eccentricity: 0.08, shader: 'lavaFragmentShader' },
                     { id: 'contact', label: 'Contact', radius: 20, speed: 0.04, inclination: 0.0, eccentricity: 0.01, shader: 'terrestrialFragmentShader' } 
                 ];
@@ -793,11 +769,20 @@
                     const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
                     navItems.forEach((item, i) => {
                         const nodeGroup = new THREE.Group(); nodeGroup.name = item.id; nodeGroup.userData = item; 
+                        
+                        // UPDATED Material creation to include color uniforms if available
+                        const uniforms = { uTime: { value: 0 }, uShine: { value: 0.0 } };
+                        if (item.colorSet) {
+                            uniforms.uColor1 = { value: item.colorSet[0] };
+                            uniforms.uColor2 = { value: item.colorSet[1] };
+                            uniforms.uColor3 = { value: item.colorSet[2] };
+                        }
                         const planetMaterial = new THREE.ShaderMaterial({
                             vertexShader: document.getElementById('planetVertexShader').textContent,
                             fragmentShader: noiseCode + document.getElementById(item.shader).textContent,
-                            uniforms: { uTime: { value: 0 }, uShine: { value: 0.0 } }
+                            uniforms: uniforms
                         });
+
                         const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial); planetMesh.name = item.id; nodeGroup.add(planetMesh);
                         if (item.id === 'contact') {
                             const ringGeom = new THREE.RingGeometry(1.2, 1.8, 64);
@@ -829,9 +814,15 @@
                         const r = data.radius * (1 - e*e) / (1 + e * Math.cos(angle));
                         node.position.x = Math.cos(angle) * r; node.position.y = Math.sin(angle) * r * Math.sin(data.inclination); node.position.z = Math.sin(angle) * r * Math.cos(data.inclination);
                         const planetMesh = node.children[0]; 
-                        planetMesh.material.uniforms.uTime.value = elapsedTime;
+                        // Update uTime for planet surface animation
+                        if (planetMesh.material.uniforms.uTime) {
+                           planetMesh.material.uniforms.uTime.value = elapsedTime;
+                        }
                         planetMesh.rotation.y += 0.001; 
-                        if(data.id === 'contact' && node.children[1]) { node.children[1].material.uniforms.uTime.value = elapsedTime; }
+                        // Update uTime for ring animation if it exists
+                        if(data.id === 'contact' && node.children[1] && node.children[1].material.uniforms.uTime) { 
+                            node.children[1].material.uniforms.uTime.value = elapsedTime; 
+                        }
                         const textMesh = node.getObjectByName("text"); if (textMesh) { textMesh.quaternion.copy(mainCamera.quaternion); }
                     });
 
@@ -856,7 +847,9 @@
                         }
                     } else { if (hoveredNode) { customCursor.classList.remove('hover'); hoveredNode = null; } }
 
-                    if (sunCore) { gsap.to(sunCore.material.uniforms.uCoreProximity, { value: coreProximityValue, duration: 0.3 }); }
+                    if (sunCore && sunCore.material.uniforms.uCoreProximity) { // Check uniform exists
+                        gsap.to(sunCore.material.uniforms.uCoreProximity, { value: coreProximityValue, duration: 0.3 }); 
+                    }
 
                     if (document.querySelectorAll('.content-panel.active').length === 0 && !gsap.isTweening(mainCamera.position)) {
                          mainCamera.position.x = THREE.MathUtils.lerp(mainCamera.position.x, homePosition.x + mouse.x * 1.5, 0.05); 
@@ -946,12 +939,12 @@
             window.addEventListener('mousemove', e => {
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-                if(customCursor) { // Check if cursor element exists
+                if(customCursor) { 
                     customCursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
                     customCursor.style.opacity = '1'; 
                 }
             });
-             window.addEventListener('mouseout', () => { if(customCursor) customCursor.style.opacity = '0'; }); // Check if cursor element exists
+             window.addEventListener('mouseout', () => { if(customCursor) customCursor.style.opacity = '0'; }); 
              window.addEventListener('mousedown', () => {
                  customCursor?.classList.add('clicked');
                 if (!soundsReady) {
@@ -971,7 +964,7 @@
             const muteBtn = document.getElementById('mute-btn');
             const soundOnIcon = document.getElementById('sound-on-icon');
             const soundOffIcon = document.getElementById('sound-off-icon');
-            if (muteBtn && soundOnIcon && soundOffIcon) { // Check if elements exist
+            if (muteBtn && soundOnIcon && soundOffIcon) { 
                 muteBtn.addEventListener('click', () => {
                     isMuted = !isMuted;
                     soundOnIcon.classList.toggle('hidden', isMuted);
