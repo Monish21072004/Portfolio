@@ -1072,7 +1072,14 @@
 
             document.querySelectorAll('.nav-link').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
+                    // FIX: Check if it's a resume button BEFORE preventDefault
+                    if (this.classList.contains('resume-btn')) {
+                        // If it's a resume button, do nothing and let the link work
+                        return;
+                    }
+                    
+                    e.preventDefault(); // Prevent default only for nav links
+                    
                     if (isUniverseEnding) return; 
                     if (isExploreMode) { toggleExploreMode(); }
                     
