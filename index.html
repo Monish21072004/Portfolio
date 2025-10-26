@@ -510,7 +510,7 @@
                 <a href="#projects" class="nav-link text-base lg:text-lg font-medium" data-target="projects">Projects</a>
                 <a href="#contact" class="nav-link text-base lg:text-lg font-medium" data-target="contact">Contact</a>
                 <button id="explore-btn" class="resume-btn text-sm lg:text-lg font-medium ml-2">Explore Mode</button>
-                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2 (1).pdf" target="_blank" class="resume-btn nav-link text-sm lg:text-lg font-medium ml-2">Download Resume</a> 
+                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-sm lg:text-lg font-medium ml-2">Download Resume</a> 
             </nav>
             <div class="md:hidden flex items-center">
                 <button id="mobile-menu-button" class="text-white focus:outline-none z-30">
@@ -528,7 +528,7 @@
                 <a href="#projects" class="nav-link mobile-nav-link text-lg font-medium" data-target="projects">Projects</a>
                 <a href="#contact" class="nav-link mobile-nav-link text-lg font-medium" data-target="contact">Contact</a>
                 <button id="mobile-explore-btn" class="resume-btn nav-link text-lg font-medium text-[var(--primary-accent)] mt-2">Explore Mode</button>
-                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2 (1).pdf" target="_blank" class="resume-btn nav-link text-lg font-medium text-[var(--primary-accent)] mt-2">Download Resume</a>
+                <a href="https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/documents/MonishCV2.pdf" target="_blank" class="resume-btn nav-link text-lg font-medium text-[var(--primary-accent)] mt-2">Download Resume</a>
             </div>
         </div>
     </header>
@@ -683,7 +683,7 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js'; // FIXED: Was 'threeModular'
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js'; 
 
         document.addEventListener('DOMContentLoaded', () => {
             gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
@@ -1072,14 +1072,7 @@
 
             document.querySelectorAll('.nav-link').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
-                    // FIX: Check if it's a resume button BEFORE preventDefault
-                    if (this.classList.contains('resume-btn')) {
-                        // If it's a resume button, do nothing and let the link work
-                        return;
-                    }
-                    
-                    e.preventDefault(); // Prevent default only for nav links
-                    
+                    e.preventDefault();
                     if (isUniverseEnding) return; 
                     if (isExploreMode) { toggleExploreMode(); }
                     
@@ -1330,7 +1323,7 @@
                 { name: "DRAGON CHASE Game", category: "game", desc: "An interactive 2D game developed with Pygame.", tags: [{n: "GameDev", c: "gold"}, {n: "Python", c: "gold"}, {n: "Pygame", c: "gold"}], link: "https://github.com/Monish21072004/DRAGON-CHASE.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/Dragon_Chase.png", demo: "https://monish21072004.github.io/DRAGON-CHASE/" },
                 { name: "Face Emotion Recognition", category: "ai", desc: "An AI application that detects and classifies human emotions in real-time.", tags: [{n: "AI/ML", c: "gold"}, {n: "ComputerVision", c: "gold"}, {n: "OpenCV", c: "gold"}], link: "https://github.com/Monish21072004/Face-Emotion-Recognition.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/face_emotion_recognition_an_ai.png" },
                 { name: "Store Management System", category: "software", desc: "A robust database-driven application for managing store inventory.", tags: [{n: "Database", c: "gold"}, {n: "SQL", c: "gold"}, {n: "Backend", c: "gold"}], link: "https://github.com/Monish21072004/Store_Management.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/store_management_system_a_robu.png" },
-                { name: "Bingo Game", category: "game", desc: "A classic Bingo game with an interactive UI. Fun for all ages!", tags: [{n: "GameDev", c: "gold"}, {n: "JavaScript", c: "gold"}, {n: "CSS", c: "gold"}], link: "https://github.com/Monish21072004/Bingo-game.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/BingoGame.png", demo: "https://monish21072004.github.io/Bingo-game" }
+                { name: "Bingo Game", category: "game", desc: "A classic Bingo game with an interactive UI. Fun for all ages!", tags: [{n: "GameDev", c: "gold"}, {n: "JavaScript", c: "gold"}, {n: "CSS", c: "gold"}], link: "httpsC://github.com/Monish21072004/Bingo-game.git", image: "https://raw.githubusercontent.com/Monish21072004/Portfolio/main/assets/BingoGame.png", demo: "https://monish21072004.github.io/Bingo-game" }
             ];
 
             const technologiesData = [ 
